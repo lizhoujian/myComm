@@ -15,7 +15,7 @@
 #include <windows.h>
 #include <process.h>
 // test response for windows
-#define __WINDOWS_TEST__
+//#define __WINDOWS_TEST__
 
 typedef void * xQueueHandle;
 typedef void * xSemaphoreHandle;
@@ -163,7 +163,7 @@ static void uart_cb(u8 c)
         p->data[p->index++] = c;
         parse_buf(p, p->index);
     } else {
-        TRACE("insert char overflow or not init c=%c???\n", c);
+        TRACE("overflow or not init c=%x, index=%d, len=%d ???\n", p->index, p->len);
     }
 
     xSemaphoreGiveFromISR(uart_queue_recv, NULL);
@@ -253,7 +253,7 @@ static bool wait_recv_done(u16 miliseconds)
     }
 
 #ifdef __WINDOWS__
-    _sleep(100);
+    _sleep(2000);
     ret = true;
 #else
     xQueueReceive(uart_queue_recv, (void *)&e, (portTickType)(miliseconds / portTICK_RATE_MS));
@@ -452,7 +452,7 @@ static u16 unit_addr(register_t *r, u8 cmd, u16 addr)
     return raddr;
 }
 
-static u16 create_request(register_t *r, u8 cmd, u16 addr, u8 *data, u16 len, u8 **req)
+static u16 create_request2(register_t *r, u8 cmd, u16 addr, u8 *data, u16 len, u8 **req)
 {
     u8 *buf;
     u16 rlen;
@@ -489,6 +489,43 @@ static u16 create_request(register_t *r, u8 cmd, u16 addr, u8 *data, u16 len, u8
     return 0;
 }
 
+static u16 create_request(register_t *r, u8 cmd, u16 addr, u8 *data, u16 len, u8 **req)
+{
+    u8 *buf;
+    u16 rlen;
+    u16 raddr;
+    u8 sum;
+
+    raddr = unit_addr(r, cmd, addr);
+
+    rlen = 1 + 1 + 1 + 4;
+    rlen += (len > 0 ? 2 : 0);
+    rlen += (data != NULL ? len * 2 : 0);
+    rlen += 1 + 2;
+
+    buf = (u8*)malloc(rlen);
+    if (buf) {
+        memset(buf, 0, rlen);
+        buf[0] = STX;
+        buf[1] = TO_ASCII(0x0F);
+        buf[2] = TO_ASCII(cmd);
+        hex_to_ascii((u8*)&raddr, &buf[3], 2); /* 4 bytes */
+        if (len > 0) {
+            to_ascii((u8)len, &buf[7]); /* 2 bytes */
+        }
+        if (data != NULL) {
+            hex_to_ascii(data, &buf[9], len); /* (2 * len) bytes */
+        }
+        buf[rlen - 1 - 2] = ETX;
+        sum = check_sum(&buf[1], rlen - 3); /* - STX - CHECKSUM */
+        to_ascii(sum, &buf[rlen - 1 - 1]);
+
+        *req = buf;
+        return rlen;
+    }
+
+    return 0;
+}
 static void send_request(u8 *s, u16 len)
 {
     uart_send(s, len);
