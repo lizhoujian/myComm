@@ -8,6 +8,7 @@
 #include "resource.h"
 
 #pragma comment(lib,"WinMM")
+#pragma comment(lib, "Kernel32")
 
 struct deal_s deal;
 
@@ -323,8 +324,19 @@ typedef struct _RECV_STRUCT
 } RECV_STRUCT;
 //#pragma  pack(pop)
 
+static void TRACE(const char * sz, ...)
+{
+    char szData[512]={0};
+
+    va_list args;
+    va_start(args, sz);
+    _vsnprintf(szData, sizeof(szData) - 1, sz, args);
+    va_end(args);
+
+    OutputDebugString(szData);
+}
+
 #include "user_fx.h"
-#define TRACE printf
 static void recv_to_fx(unsigned char *data, int len)
 {
     int i;
@@ -346,7 +358,7 @@ static void send_to_fx(unsigned char *data, int len)
     psd->flag = 1;
     WriteFile(comm.hPipeWrite, &psd, 4, &nWritten, NULL);
     InterlockedExchangeAdd((volatile long *)&comm.cchNotSend, psd->data_size);
-    TRACE("send_to_fx request %d, sent %d bytes.\n", len, nWritten);
+    //TRACE("send_to_fx request %d, sent %d bytes.\n", len, nWritten);
 }
 
 static void appendSent(unsigned char *s)
@@ -383,15 +395,15 @@ static void fxSend(unsigned char c)
 
 static void write_read_test1(void)
 {
-#define DATA_LEN 2
+    int data_len = 2;
     int i;
     unsigned char bytes[20] = {0x35, 0x84};
 
-    fx_write(REG_Y, 0, bytes, DATA_LEN);
+    fx_write(REG_Y, 0, bytes, data_len);
     appendSentLR();
-    fx_read(REG_Y, 0, bytes, DATA_LEN);
+    fx_read(REG_Y, 0, bytes, data_len);
     TRACE("read bytes is ");
-    for (i = 0; i < DATA_LEN; i++) {
+    for (i = 0; i < data_len; i++) {
         TRACE("%02x ", bytes[i]);
     }
     TRACE("\n");
@@ -400,15 +412,15 @@ static void write_read_test1(void)
 
 static void write_read_test2(void)
 {
-#define DATA_LEN 4
     int i;
+    int data_len = 4;
     unsigned char bytes[20] = {0x34, 0x12, 0xcd, 0xab};
 
-    fx_write(REG_D, 123, bytes, DATA_LEN);
+    fx_write(REG_D, 123, bytes, data_len);
     appendSentLR();
-    fx_read(REG_D, 123, bytes, DATA_LEN);
+    fx_read(REG_D, 123, bytes, data_len);
     TRACE("read bytes is ");
-    for (i = 0; i < DATA_LEN; i++) {
+    for (i = 0; i < data_len; i++) {
         TRACE("%02x ", bytes[i]);
     }
     TRACE("\n");
@@ -448,6 +460,8 @@ static unsigned int __stdcall fx_send_test(void* p)
 
     write_read_test1();
     write_read_test2();
+
+    return 0;
 }
 
 //读操作线程
@@ -487,10 +501,10 @@ unsigned int __stdcall thread_read(void *pv)
                 nBytesToRead = COMMON_READ_BUFFER_SIZE - 1;
             }
 
-            for(nTotalRead = 0; nTotalRead < nBytesToRead;)
+            for (nTotalRead = 0; nTotalRead < nBytesToRead;)
             {
                 retval = ReadFile(msg.hComPort, &block_data[0] + nTotalRead, nBytesToRead - nTotalRead, &nRead, NULL);
-                if(!retval)
+                if (!retval)
                 {
                     if(!comm.fCommOpened)
                         __leave;
@@ -554,7 +568,7 @@ unsigned int __stdcall thread_read(void *pv)
                 //若最后以CHARFMT_OEMCP结束
                 flag_need_one_more_byte = flag_current == CHARFMT_OEMCP && flag == CHARFMT_OEMCP;
 
-                if(flag_need_one_more_byte)
+                if (flag_need_one_more_byte)
                 {
                     //int times=50;
                     unsigned char read_byte = 0;

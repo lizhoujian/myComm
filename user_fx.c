@@ -10,6 +10,9 @@
 #endif
 
 #ifdef __WINDOWS__
+#include <stdarg.h>
+#include <stdio.h>
+#include <windows.h>
 #include <process.h>
 // test response for windows
 #define __WINDOWS_TEST__
@@ -62,7 +65,17 @@ static void uart_set_recv_cb(cb myCb)
 {
 
 }
-#define TRACE printf
+static void TRACE(const char * sz, ...)
+{
+    char szData[512]={0};
+
+    va_list args;
+    va_start(args, sz);
+    _vsnprintf(szData, sizeof(szData) - 1, sz, args);
+    va_end(args);
+
+    OutputDebugString(szData);
+}
 #else
 #define TRACE printf
 #endif
