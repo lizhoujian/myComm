@@ -93,7 +93,7 @@ int do_buf_recv(unsigned char *chs, int cb, int action)
                                "内部缓冲区默认的1M空间已满, 数据可能已部分丢失!\n\n"
                                "是否要清空内部缓冲区?"
                               );
-            if(ret == IDYES)
+            if (ret == IDYES)
             {
                 free(str);
                 str = NULL;
@@ -168,8 +168,9 @@ void do_check_recv_buf(void)
 }
 
 #define SEND_DATA_SIZE 100
-int do_buf_send(int action)
+int do_buf_send(int action, int len)
 {
+#if 0
     static int insertl = 0;
     static int removel = 0;
     static SEND_DATA *send_data[SEND_DATA_SIZE];
@@ -181,7 +182,7 @@ int do_buf_send(int action)
         int len = sizeof(SEND_DATA) * SEND_DATA_SIZE;
         void *pv = utils.get_mem(len);
         if(!pv) return 0;
-        for(it = 0; it < SEND_DATA_SIZE; it++)
+        for (it = 0; it < SEND_DATA_SIZE; it++)
         {
             send_data[it] = (SEND_DATA *)((unsigned char *)pv + it * sizeof(SEND_DATA));
             send_data[it]->flag = -1;
@@ -196,13 +197,22 @@ int do_buf_send(int action)
         else
         {
             SEND_DATA *psd = send_data[insertl];
-            psd->flag = 1;
-            insertl++;
+            send_data[insertl]->data = utils.get_mem(len);
+            if (send_data[insertl]->data){
+                psd->flag = 1;
+                insertl++;
+            }
             return (int)psd;
         }
     }
     case 2://归还缓冲区
     {
+        if (send_data[removel]->flag != -1) {
+            if (send_data[removel]->data) {
+                utils.free_mem(&send_data[removel]->data, "<do_buf_send>");
+                send_data[removel]->data = NULL;
+            }
+        }
         send_data[removel]->flag = -1;
         if(++removel == SEND_DATA_SIZE)
             removel = 0;
@@ -212,6 +222,16 @@ int do_buf_send(int action)
         free(send_data[0]);
         return 1;
     }
+#else
+    if (action == 1) {
+        SEND_DATA *p = (SEND_DATA*)utils.get_mem(sizeof(SEND_DATA) + len + 1);
+        if (p) {
+            memset(p, 0, sizeof(SEND_DATA) + len + 1);
+            p->data = (unsigned char*)p + sizeof(SEND_DATA);
+            return (int)p;
+        }
+    }
+#endif
     return 0;
 }
 
@@ -351,7 +371,7 @@ static void send_to_fx(unsigned char *data, int len)
     SEND_DATA *psd = NULL;
 
     while (psd == NULL) {
-        psd = (SEND_DATA *)deal.do_buf_send(1);
+        psd = (SEND_DATA *)deal.do_buf_send(1, len);
     }
     memcpy(psd->data, data, len);
     psd->data_size = len;
@@ -379,12 +399,19 @@ static void appendSentHex(unsigned char *s, int len)
             sprintf(r + i * 3, "%02x ", s[i]);
         }
         appendSent(r);
+        free(r);
     }
 }
 
 static void appendSentLR(void)
 {
     appendSent("\r\n");
+}
+
+static void fx_send_string(unsigned char *data, unsigned short len)
+{
+    appendSentHex(data, len);
+    send_to_fx(data, len);
 }
 
 static void fxSend(unsigned char c)
@@ -452,6 +479,7 @@ static void test_onoff2(void)
 static unsigned int __stdcall fx_send_test(void* p)
 {
     uart_set_tx_cb(fxSend);
+    uart_set_tx_string_cb(fx_send_string);
 
     test_enquiry();
 
@@ -577,12 +605,12 @@ unsigned int __stdcall thread_read(void *pv)
                     while(1)
                     {
                         ClearCommError(msg.hComPort, &comerr, &sta);
-                        if(sta.cbInQue)
+                        if (sta.cbInQue)
                         {
                             retval = ReadFile(msg.hComPort, &read_byte, 1, &nRead, NULL);
-                            if(!retval)
+                            if (!retval)
                             {
-                                if(!comm.fCommOpened)
+                                if (!comm.fCommOpened)
                                 {
                                     int len;
                                     char t[64];
@@ -671,7 +699,7 @@ unsigned int __stdcall thread_write(void *pv)
             //约定指针值为0x00000001时为退出(非分配内存)
             if((unsigned long)psd == 0x00000001)
             {
-                //do_buf_send(2);
+                //do_buf_send(2, 0);
                 break;
             }
             else
@@ -698,10 +726,13 @@ unsigned int __stdcall thread_write(void *pv)
                         update_status(NULL);
                     }
                 }
-                if(psd->flag == 1)
-                    do_buf_send(2);
-                else if(psd->flag == 2)
+                if(psd->flag == 1) {
+                    //do_buf_send(2, 0);
+                    //utils.free_mem(&psd->data, "<thread_write>");
+                    utils.free_mem(&psd, "<thread_write>");
+                } else if(psd->flag == 2) {
                     utils.free_mem((void **)&psd, "被写完的数据");
+                }
             }
         }
         else
@@ -874,7 +905,7 @@ void do_send(void)
     //TODO:
     if(len < 1024)
     {
-        psd = (SEND_DATA *)deal.do_buf_send(1);
+        psd = (SEND_DATA *)deal.do_buf_send(1, len);
         if(!psd)
         {
             free(comm.data_fmt_send ? bytearray : (unsigned char *)buff);

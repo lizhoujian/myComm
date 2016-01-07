@@ -16,7 +16,10 @@ typedef unsigned short u16;
 typedef unsigned int u32;
 
 typedef void (*set_tx_cb)(unsigned char c);
+typedef void (*set_tx_string_cb)(unsigned char *data, unsigned short len);
+
 void uart_set_tx_cb(set_tx_cb cb);
+void uart_set_tx_string_cb(set_tx_string_cb cb);
 void uart_on_recv_char(unsigned char c);
 
 #define STX 0x2

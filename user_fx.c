@@ -65,6 +65,19 @@ static void uart_set_recv_cb(cb myCb)
 {
 
 }
+
+static set_tx_string_cb curr_set_tx_string_cb;
+void uart_set_tx_string_cb(set_tx_string_cb cb)
+{
+    curr_set_tx_string_cb = cb;
+}
+static void uart_send(u8 *data, u16 len)
+{
+    if (curr_set_tx_string_cb) {
+        (*curr_set_tx_string_cb)(data, len);
+    }
+}
+
 static void TRACE(const char * sz, ...)
 {
     char szData[512]={0};
@@ -78,6 +91,13 @@ static void TRACE(const char * sz, ...)
 }
 #else
 #define TRACE printf
+static void uart_send(u8 *data, u16 len)
+{
+    int i;
+    for (i = 0; i < len; i++) {
+        uart_tx_one_char(UART0, data[i]);
+    }
+}
 #endif
 
 #include "user_fx.h"
@@ -147,14 +167,6 @@ static void uart_cb(u8 c)
     }
 
     xSemaphoreGiveFromISR(uart_queue_recv, NULL);
-}
-
-static void uart_send(u8 *data, u16 len)
-{
-    int i;
-    for (i = 0; i < len; i++) {
-        uart_tx_one_char(UART0, data[i]);
-    }
 }
 
 u8 check_sum(u8 *in, u16 inLen)

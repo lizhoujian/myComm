@@ -13,7 +13,7 @@ typedef struct _SEND_DATA
 {
     DWORD data_size;
     int flag;
-    unsigned char data[10240];//2013-03-23:Ôö¼Óµ½10KB
+    unsigned char *data;
 } SEND_DATA;
 
 struct deal_s

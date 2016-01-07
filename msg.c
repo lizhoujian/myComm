@@ -190,7 +190,7 @@ int on_create(HWND hWnd, HINSTANCE hInstance)
     comm.update((int *) - 1);
     if(ComboBox_GetCount(GetDlgItem(hWnd, IDC_CBO_CP)) == 0)
         deal.update_status("没有任何可用的串口!");
-    deal.do_buf_send(0);
+    deal.do_buf_send(0, 0);
     return 0;
 }
 
@@ -206,7 +206,7 @@ int on_close(void)
     }
     if(comm.fCommOpened)
         comm.close();
-    deal.do_buf_send(3);
+    deal.do_buf_send(3, 0);
     deal.do_buf_recv(NULL, 0, 3);
 
     if(msg.hFont) //删除创建的等宽字体
