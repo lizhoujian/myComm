@@ -3,25 +3,25 @@
 
 #include "debug.h"
 
-void DebugOut(char* fmt, ...)
-{	
-	char buf[1024] = {0};
-	va_list va;
-	COPYDATASTRUCT cds = {0};
-	int len;
+void DebugOut(char *fmt, ...)
+{
+    char buf[1024] = {0};
+    va_list va;
+    COPYDATASTRUCT cds = {0};
+    int len;
 
-	HWND hWndDebugWindow = NULL;
-	hWndDebugWindow = FindWindow("nbsg_debug_window_class", NULL);
-	if(!hWndDebugWindow || !IsWindow(hWndDebugWindow))
-		return;
+    HWND hWndDebugWindow = NULL;
+    hWndDebugWindow = FindWindow("nbsg_debug_window_class", NULL);
+    if(!hWndDebugWindow || !IsWindow(hWndDebugWindow))
+        return;
 
-	va_start(va, fmt);
-	//vsprintf(buf, fmt, va);
-	len=_vsnprintf(buf,sizeof(buf),fmt,va);
-	
-	cds.dwData = 0;
-	cds.lpData = (void*)buf;
-	cds.cbData = len+1;
-	SendMessage(hWndDebugWindow, WM_COPYDATA, 0, (LPARAM)&cds);
-	return;
+    va_start(va, fmt);
+    //vsprintf(buf, fmt, va);
+    len = _vsnprintf(buf, sizeof(buf), fmt, va);
+
+    cds.dwData = 0;
+    cds.lpData = (void *)buf;
+    cds.cbData = len + 1;
+    SendMessage(hWndDebugWindow, WM_COPYDATA, 0, (LPARAM)&cds);
+    return;
 }

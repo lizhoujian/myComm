@@ -9,28 +9,31 @@
 
 void init_deal(void);
 
-typedef struct _SEND_DATA{
-	DWORD data_size;
-	int flag;
-	unsigned char data[10240];//2013-03-23:增加到10KB
-}SEND_DATA;
+typedef struct _SEND_DATA
+{
+    DWORD data_size;
+    int flag;
+    unsigned char data[10240];//2013-03-23:增加到10KB
+} SEND_DATA;
 
-struct deal_s{
-	void (*do_check_recv_buf)(void);
-	int (*do_buf_send)(int action);
-	int (*do_buf_recv)(unsigned char* chs, int cb, int action);
-	void (*update_status)(char* str);
-	void (*update_savebtn_status)(void);
-	void (*cancel_auto_send)(int reason);
-	void (*check_auto_send)(void);
-	unsigned int (__stdcall* thread_read)(void* pv);
-	unsigned int (__stdcall* thread_write)(void* pv);
-	void (*do_send)(void);
-	void (*start_timer)(int start);
-	//....
-	int last_show;
-	//计时器
-	unsigned int conuter;
+struct deal_s
+{
+    void (*do_check_recv_buf)(void);
+    int (*do_buf_send)(int action);
+    int (*do_buf_recv)(unsigned char *chs, int cb, int action);
+    void (*update_status)(char *str);
+    void (*update_savebtn_status)(void);
+    void (*cancel_auto_send)(int reason);
+    void (*check_auto_send)(void);
+    unsigned int (__stdcall *thread_read)(void *pv);
+    unsigned int (__stdcall *thread_write)(void *pv);
+    void (*do_send)(void);
+    void (*do_send_fx)(void);
+    void (*start_timer)(int start);
+    //....
+    int last_show;
+    //计时器
+    unsigned int conuter;
 };
 
 #ifndef __DEAL_C__
@@ -40,21 +43,21 @@ extern struct deal_s deal;
 #ifdef __DEAL_C__
 #undef __DEAL_C__
 int do_buf_send(int action);
-int do_buf_recv(unsigned char* chs, int cb, int action);
+int do_buf_recv(unsigned char *chs, int cb, int action);
 void do_check_recv_buf(void);
 
-void update_status(char* str);
+void update_status(char *str);
 void update_savebtn_status(void);
 void cancel_auto_send(int reason);
 void check_auto_send(void);
 
-unsigned int __stdcall thread_read(void* pv);
-unsigned int __stdcall thread_write(void* pv);
+unsigned int __stdcall thread_read(void *pv);
+unsigned int __stdcall thread_write(void *pv);
 
 void do_send(void);
 
 //void add_ch(unsigned char ch);
-void add_text(unsigned char* ba, int cb);
+void add_text(unsigned char *ba, int cb);
 
 void start_timer(int start);
 

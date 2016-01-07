@@ -3,14 +3,15 @@
 
 #define COMMON_NAME "Com Monitor"
 //#define COMMON_NAME_AND_VERSION COMMON_NAME" 1.10"
-#ifdef _DEBUG 
-	#define COMMON_NAME_AND_VERSION COMMON_NAME " 1.10 - Debug Mode"
+#ifdef _DEBUG
+#define COMMON_NAME_AND_VERSION COMMON_NAME " 1.10 - Debug Mode"
 #else
-	#define COMMON_NAME_AND_VERSION COMMON_NAME " 1.10"
+#define COMMON_NAME_AND_VERSION COMMON_NAME " 1.10"
 #endif
 
-struct about_s{
-	void (*show)(void);
+struct about_s
+{
+    void (*show)(void);
 };
 
 void init_about(void);

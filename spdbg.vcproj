@@ -413,6 +413,10 @@
 				</FileConfiguration>
 			</File>
 			<File
+				RelativePath=".\user_fx.c"
+				>
+			</File>
+			<File
 				RelativePath="utils.c"
 				>
 				<FileConfiguration
@@ -466,6 +470,10 @@
 				>
 			</File>
 			<File
+				RelativePath=".\resource.h"
+				>
+			</File>
+			<File
 				RelativePath="spdbg.h"
 				>
 			</File>
@@ -475,6 +483,10 @@
 			</File>
 			<File
 				RelativePath="timeouts.h"
+				>
+			</File>
+			<File
+				RelativePath=".\user_fx.h"
 				>
 			</File>
 			<File
