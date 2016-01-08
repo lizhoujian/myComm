@@ -259,7 +259,13 @@ static bool wait_recv_done(u16 miliseconds)
     }
 
 #ifdef __WINDOWS__
-    _sleep(2000);
+    miliseconds /= (1000 / portTICK_RATE_MS);
+    while (miliseconds-- > 0) {
+        _sleep(1000 / portTICK_RATE_MS);
+        if (p->data && (p->index == p->len || p->data[0] == NAK || p->data[0] == ACK)) {
+            ret = true;
+        }
+    }
     ret = true;
 #else
     xQueueReceive(uart_queue_recv, (void *)&e, (portTickType)(miliseconds / portTICK_RATE_MS));
@@ -334,14 +340,20 @@ static bool parse_response_data(u8 *out, u16 len)
 
     xSemaphoreTake(uart_queue_recv, portMAX_DELAY);
 
-    if ((p->index == p->len) && p->data[0] == STX && (p->index > 3 && p->data[p->index - 1 - 2] == ETX)) {
-        sum = check_sum(&p->data[1], p->len - 3); /* - STX - CHECKSUM */
-        recv_sum = to_hex(&p->data[p->index - 1 - 1]);
-        if (sum == recv_sum) {
-            ascii_to_hex(&p->data[1], out, p->len - 4);
-            ret = true;
+    if (p->data != NULL && p->index == p->len) {
+        if (p->data[0] == ACK || p->data[0] == NAK) {
+            return p->data[0] == ACK;
+        } else if (p->data[0] == STX && (p->index > 3 && p->data[p->index - 1 - 2] == ETX)) {
+            sum = check_sum(&p->data[1], p->len - 3); /* - STX - CHECKSUM */
+            recv_sum = to_hex(&p->data[p->index - 1 - 1]);
+            if (sum == recv_sum) {
+                ascii_to_hex(&p->data[1], out, p->len - 4);
+                ret = true;
+            } else {
+                TRACE("response data check sum error.\n");
+            }
         } else {
-            TRACE("response data check sum error.\n");
+            TRACE("parse response data invalid.\n");
         }
     } else {
         TRACE("parse response data invalid.\n");
@@ -465,6 +477,10 @@ static u16 create_request(register_t *r, u8 cmd, u16 addr, u8 *data, u16 len, u8
     u8 sum;
 
     raddr = unit_addr(r, cmd, addr);
+    if (raddr == REG_INVALID_ADDRESS) {
+        TRACE("reg type = %d, cmd = %d, invalid base address.\n", r->type, cmd);
+        return 0;
+    }
 
     rlen = 1 + 1 + 4;
     rlen += (len > 0 ? 2 : 0);
@@ -494,43 +510,6 @@ static u16 create_request(register_t *r, u8 cmd, u16 addr, u8 *data, u16 len, u8
     return 0;
 }
 
-static u16 create_request2(register_t *r, u8 cmd, u16 addr, u8 *data, u16 len, u8 **req)
-{
-    u8 *buf;
-    u16 rlen;
-    u16 raddr;
-    u8 sum;
-
-    raddr = unit_addr(r, cmd, addr);
-
-    rlen = 1 + 1 + 1 + 4;
-    rlen += (len > 0 ? 2 : 0);
-    rlen += (data != NULL ? len * 2 : 0);
-    rlen += 1 + 2;
-
-    buf = (u8*)malloc(rlen);
-    if (buf) {
-        memset(buf, 0, rlen);
-        buf[0] = STX;
-        buf[1] = TO_ASCII(0x0F);
-        buf[2] = TO_ASCII(cmd);
-        hex_to_ascii((u8*)&raddr, &buf[3], 2); /* 4 bytes */
-        if (len > 0) {
-            to_ascii((u8)len, &buf[7]); /* 2 bytes */
-        }
-        if (data != NULL) {
-            hex_to_ascii(data, &buf[9], len); /* (2 * len) bytes */
-        }
-        buf[rlen - 1 - 2] = ETX;
-        sum = check_sum(&buf[1], rlen - 3); /* - STX - CHECKSUM */
-        to_ascii(sum, &buf[rlen - 1 - 1]);
-
-        *req = buf;
-        return rlen;
-    }
-
-    return 0;
-}
 static void send_request(u8 *s, u16 len)
 {
     uart_send(s, len);
@@ -587,6 +566,93 @@ static void create_thread(unsigned int (__stdcall *t)(void *p), void *p)
 }
 #endif
 
+static bool fx_execute(u8 addr_type, u8 cmd, u16 addr, u8 *inout, u16 inout_len)
+{
+    register_t *r;
+    u8 *req;
+    u16 rlen;
+    bool ret = false;
+
+    //if (fx_enquiry()) {
+        r = find_registers(addr_type);
+        if (r) {
+            if ((rlen = create_request(r, cmd, addr, (cmd == ACTION_WRITE ? inout : NULL), inout_len, &req)) > 0) {
+                create_response(cmd, inout_len);
+                send_request(req, rlen);
+#ifdef __WINDOWS_TEST__
+                if (cmd == ACTION_READ) {
+                    create_thread(thread_read, (void*)inout_len);
+                } else {
+                    create_thread(thread_ack, NULL);
+                }
+#endif
+                free_request(req);
+                ret = wait_response(WAIT_RECV_TIMEOUT);
+                if (ret) {
+                    ret = parse_response_data(inout, inout_len);
+                }
+                free_response();
+            }
+        }
+    //}
+
+    return ret;
+}
+
+#define DIFF_BIT(a, b, i) ((((a) >> i) & 0x1) != (((b) >> i) & 0x1))
+
+static bool write_byte(u8 addr_type, u8 old, u8 new, u16 addr)
+{
+    int i;
+
+    for (i = 0; i < 8; i++) {
+        if (DIFF_BIT(old, new, i)) {
+            if ((new >> i) & 0x1) {
+                if (!fx_force_on(addr_type, addr * 8 + i)) {
+                    return false;
+                }
+            } else {
+                if (!fx_force_off(addr_type, addr * 8 + i)) {
+                    return false;
+                }
+            }
+        }
+    }
+
+    return true;
+}
+
+static bool fx_write_by_bit(u8 addr_type, u16 addr, u8 *data, u16 len)
+{
+    int i;
+    bool ret = false;
+    u8 *old;
+
+    old = (u8*)malloc(len + 1);
+    if (!old) {
+        return false;
+    }
+
+    memset(old, 0, len + 1);
+    if (!fx_read(addr_type, addr, old, len)) {
+        goto __exit;
+    }
+
+    for (i = 0; i < len; i++) {
+        if (old[i] != data[i]) {
+            if (!write_byte(addr_type, old[i], data[i], addr + i)) {
+                goto __exit;
+            }
+        }
+    }
+
+    ret = true;
+
+__exit:
+    free(old);
+    return ret;
+}
+
 bool fx_enquiry(void)
 {
     bool ret = false;
@@ -603,94 +669,26 @@ bool fx_enquiry(void)
     return ret;
 }
 
-static bool fx_force_onoff(u8 addr_type, u16 addr, u8 cmd)
-{
-    register_t *r;
-    u8 *req;
-    u16 rlen;
-    bool ret = false;
-
-    if (fx_enquiry()) {
-        r = find_registers(addr_type);
-        if (r) {
-            if ((rlen = create_request(r, cmd, addr, NULL, 0, &req)) > 0) {
-                create_response(cmd, 0);
-                send_request(req, rlen);
-#ifdef __WINDOWS_TEST__
-                create_thread(thread_ack, NULL);
-#endif
-                free_request(req);
-                ret = wait_response(WAIT_RECV_TIMEOUT) && is_ack();
-                free_response();
-            }
-        }
-    }
-
-    return ret;
-}
-
 bool fx_force_on(u8 addr_type, u16 addr)
 {
-    return fx_force_onoff(addr_type, addr, ACTION_FORCE_ON);
+    return fx_execute(addr_type, ACTION_FORCE_ON, addr, NULL, 0);
 }
 
 bool fx_force_off(u8 addr_type, u16 addr)
 {
-    return fx_force_onoff(addr_type, addr, ACTION_FORCE_OFF);
+    return fx_execute(addr_type, ACTION_FORCE_OFF, addr, NULL, 0);
 }
 
 bool fx_read(u8 addr_type, u16 addr, u8 *out, u16 len)
 {
-    register_t *r;
-    u8 *req;
-    u16 rlen;
-    bool ret = false;
-
-    if (fx_enquiry()) {
-        r = find_registers(addr_type);
-        if (r) {
-            if ((rlen = create_request(r, ACTION_READ, addr, NULL, len, &req)) > 0) {
-                create_response(ACTION_READ, len);
-                send_request(req, rlen);
-#ifdef __WINDOWS_TEST__
-                create_thread(thread_read, (void*)len);
-#endif
-                free_request(req);
-                ret = wait_response(WAIT_RECV_TIMEOUT) && is_stx();
-                if (ret) {
-                    ret = parse_response_data(out, len);
-                }
-                free_response();
-            }
-        }
-    }
-
-    return ret;
+    return fx_execute(addr_type, ACTION_READ, addr, out, len);
 }
 
 bool fx_write(u8 addr_type, u16 addr, u8 *data, u16 len)
 {
-    register_t *r;
-    u8 *req;
-    u16 rlen;
-    bool ret = false;
-
-    if (fx_enquiry()) {
-        r = find_registers(addr_type);
-        if (r) {
-            if ((rlen = create_request(r, ACTION_WRITE, addr, data, len, &req)) > 0) {
-                create_response(ACTION_WRITE, 0);
-                send_request(req, rlen);
-#ifdef __WINDOWS_TEST__
-                create_thread(thread_ack, NULL);
-#endif
-                free_request(req);
-                ret = wait_response(WAIT_RECV_TIMEOUT) && is_ack();
-                free_response();
-            }
-        }
+    if (addr_type == REG_M || addr_type == REG_Y) {
+        return fx_write_by_bit(addr_type, addr, data, len);
+    } else {
+        return fx_execute(addr_type, ACTION_WRITE, addr, data, len);
     }
-
-    return ret;
 }
-

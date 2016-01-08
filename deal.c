@@ -461,9 +461,9 @@ static void write_read_testM(void)
     int i;
     unsigned char bytes[20] = {0x34, 0x12};
 
-    fx_write(REG_M, 100, bytes, data_len);
+    fx_write(REG_M, 0xc, bytes, data_len);
     appendSentLR();
-    fx_read(REG_M, 100, bytes, data_len);
+    fx_read(REG_M, 0xc, bytes, data_len);
     TRACE("read bytes is ");
     for (i = 0; i < data_len; i++) {
         TRACE("%02x ", bytes[i]);
@@ -602,13 +602,13 @@ static void test_onoffY0(void)
 }
 static void test_onoffM(void)
 {
-    fx_force_off(REG_M, 100);
+    fx_force_off(REG_M, 0);
     appendSentLR();
     _sleep(1000);
-    fx_force_on(REG_M, 100);
+    fx_force_on(REG_M, 0);
     appendSentLR();
     _sleep(1000);
-    fx_force_off(REG_M, 100);
+    fx_force_off(REG_M, 0);
     appendSentLR();
 }
 static void test_onoffY23(void)
@@ -641,12 +641,12 @@ static unsigned int __stdcall fx_send_test(void* p)
     //test_onoffY0();
     //test_onoffY19();
     //test_onoffY23();
-    test_onoffM();
+    //test_onoffM();
 
     //write_read_testX();
     //write_read_testY();
 	//write_read_testD();
-	//write_read_testM();
+	write_read_testM();
 	//write_read_testT();
 	//write_read_testS();
 	//write_read_testC(); //RETURN 39

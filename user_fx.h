@@ -89,7 +89,7 @@ enum {
 #define REG_MS_BIT_BASE_ADDRESS 0xf00
 #define REG_D_BIT_BASE_ADDRESS 0x0
 
-#define REG_INVALID_ADDRESS 0x0ffffffff
+#define REG_INVALID_ADDRESS 0x0ffff
 #define MAX_DATA_ONETIME 32
 
 bool fx_enquiry(void);
