@@ -110,6 +110,7 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="100.ico" />
+    <Image Include="new100.ico" />
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="xps.manifest" />

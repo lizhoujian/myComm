@@ -12,8 +12,8 @@
 #pragma comment(lib,"WinMM")
 #pragma comment(lib, "Kernel32")
 
-char *aRegType[] = {"X", "Y", "D", "M", "M*", "S", "T", "C", NULL};
-BYTE iRegType[] = {REG_X, REG_Y, REG_D, REG_M, REG_MS, REG_S, REG_T, REG_C};
+char *aRegType[] = {"X", "Y", "S", "T", "C", "D", "D*", "M", "M*", "TV16", "CV16", "CV32", NULL};
+BYTE iRegType[] = {REG_X, REG_Y, REG_S, REG_T, REG_C, REG_D, REG_DS, REG_M, REG_MS, REG_TV16, REG_CV16, REG_CV32};
 char *aRegBitValue[] = {"÷√Œª", "∏¥Œª", NULL};
 BYTE iRegBitValue[] = {1, 0};
 
@@ -777,6 +777,7 @@ static unsigned int __stdcall do_fx_byte_read_thread(void *pv)
 	u8 addr_type = 0;
 	u16 addr = 0;
     u16 len = 0;
+    u32 value = 0;
 	u8 *buf;
     int i;
     bool ret = false;
@@ -799,7 +800,17 @@ static unsigned int __stdcall do_fx_byte_read_thread(void *pv)
                 if (ret) {
                     memset(text, 0, sizeof(text));
                     for (i = 0; i < len; i++) {
-                        sprintf(text, "%02x", buf[i]);
+                        //sprintf(text + i * 2, "%02x", buf[i]);
+                        value += (buf[i] << (i * 8));
+                    }
+                    if (len == 1) {
+                        sprintf(text, "%01x", value);
+                    } else if (len == 2) {
+                        sprintf(text, "%02x", value);
+                    } else if (len == 4) {
+                        sprintf(text, "%04x", value);
+                    } else {
+                        sprintf(text, "%02x", value);
                     }
                     {
                         HWND hByteRead = GetDlgItem(msg.hWndMain, IDC_REG_BYTE_READ);

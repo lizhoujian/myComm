@@ -1,10 +1,10 @@
 #define _WIN32_WINNT 0x0501
 #include <windows.h>
 
-#define COMMON_NAME "Com Monitor"
+#define COMMON_NAME "FX2N Monitor"
 //#define COMMON_NAME_AND_VERSION COMMON_NAME" 1.10"
 #ifdef _DEBUG
-#define COMMON_NAME_AND_VERSION COMMON_NAME " 1.10 - Debug Mode"
+#define COMMON_NAME_AND_VERSION COMMON_NAME " 1.10 - Debug"
 #else
 #define COMMON_NAME_AND_VERSION COMMON_NAME " 1.10"
 #endif
