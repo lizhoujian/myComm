@@ -476,18 +476,18 @@ static void write_read_testD(void)
 {
     int i;
     int data_len = 4;
-    unsigned char bytes[20] = {0x54, 0x67, 0xcd, 0xab};
+    unsigned char bytes[20] = {0x54, 0x67, 0xcd, 0xab,};
 
-    fx_write(REG_D, 100, bytes + 10, data_len);
+    fx_write(REG_D, 123, bytes + 10, data_len);
     appendSentLR();
-    fx_read(REG_D, 100, bytes + 10, data_len);
+    fx_read(REG_D, 123, bytes + 10, data_len);
     TRACE("read bytes is ");
     for (i = 0; i < data_len; i++) {
         TRACE("%02x ", bytes[i]);
     }
     TRACE("\n");
     appendSentLR();
-    fx_read(REG_D, 100, bytes, data_len);
+    fx_read(REG_D, 123, bytes, data_len);
     TRACE("read bytes is ");
     for (i = 0; i < data_len; i++) {
         TRACE("%02x ", bytes[i]);
@@ -495,16 +495,16 @@ static void write_read_testD(void)
     TRACE("\n");
     appendSentLR();
 
-    fx_write(REG_D, 100, bytes, data_len);
+    fx_write(REG_D, 123, bytes, data_len);
     appendSentLR();
-    fx_read(REG_D, 100, bytes, data_len);
+    fx_read(REG_D, 123, bytes, data_len);
     TRACE("read bytes is ");
     for (i = 0; i < data_len; i++) {
         TRACE("%02x ", bytes[i]);
     }
     TRACE("\n");
     appendSentLR();
-    fx_read(REG_D, 100, bytes, data_len);
+    fx_read(REG_D, 123, bytes, data_len);
     TRACE("read bytes is ");
     for (i = 0; i < data_len; i++) {
         TRACE("%02x ", bytes[i]);
@@ -598,11 +598,23 @@ static void test_onoffY0(void)
     appendSentLR();
 }
 
+static void test_onoffY23(void)
+{
+    fx_force_off(REG_Y, 23);
+    appendSentLR();
+    _sleep(1000);
+    fx_force_on(REG_Y, 23);
+    appendSentLR();
+    _sleep(1000);
+    fx_force_off(REG_Y, 23);
+    appendSentLR();
+}
+
 static void test_onoffY19(void)
 {
-    fx_force_on(REG_Y, 3); // Y23 - 8进制
+    fx_force_on(REG_Y, 19); // Y23 - 8进制
     appendSentLR();
-    fx_force_off(REG_Y, 3);
+    fx_force_off(REG_Y, 19);
     appendSentLR();
 }
 
@@ -614,10 +626,11 @@ static unsigned int __stdcall fx_send_test(void* p)
     //test_enquiry();
 
     //test_onoffY0();
-    //test_onoffY19();
+    test_onoffY19();
+    //test_onoffY23();
 
     //write_read_testX();
-    write_read_testY();
+    //write_read_testY();
 	//write_read_testD();
 	//write_read_testM();
 	//write_read_testT();
