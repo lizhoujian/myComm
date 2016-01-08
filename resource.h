@@ -14,10 +14,13 @@
 #define IDD_DLG_EXPR                    118
 #define IDR_MENU_EDIT_RECV              120
 #define IDD_DLG_STR2HEX                 122
+#define IDD_DLG_MAIN1                   123
 #define IDC_BTN_SEND                    1000
 #define IDC_MSG_OK                      1000
 #define IDC_CBO_CP                      1001
 #define IDC_BTN_SEND2                   1002
+#define IDC_REG_TYPE                    1003
+#define IDC_REG_BIT_VALUE               1004
 #define IDC_CBO_BR                      1005
 #define IDC_CBO_CHK                     1006
 #define IDC_CBO_DATA                    1007
@@ -47,12 +50,20 @@
 #define IDC_HOOK_COMBO                  1028
 #define IDC_HOOK_STATIC                 1029
 #define IDC_EDIT_RECV2                  1029
+#define IDC_REG_BIT_ADDR                1030
 #define IDC_STATIC_VERSION              1031
+#define IDC_BTN_BIT_EXEC                1031
 #define IDC_BTN_MORE_SETTINGS           1032
+#define IDC_REG_TYPE2                   1033
 #define IDC_CTO_EDIT_READ_INTERVAL      1034
+#define IDC_REG_BYTE_ADDR2              1034
 #define IDC_CTO_EDIT_READ_MULTIPLIER    1035
+#define IDC_BTN_BYTE_EXEC               1035
 #define IDC_CTO_EDIT_READ_CONSTANT      1036
+#define IDC_REG_BYTE_WRITE              1036
 #define IDC_CTO_EDIT_WRITE_MULTIPLIER   1037
+#define IDC_REG_BYTE_WRITE2             1037
+#define IDC_REG_BYTE_READ               1037
 #define IDC_CTO_EDIT_WRITE_CONSTANT     1038
 #define IDC_CTO_BTN_OK                  1040
 #define IDC_CTO_BTN_CANCEL              1041
@@ -83,7 +94,7 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        123
+#define _APS_NEXT_RESOURCE_VALUE        124
 #define _APS_NEXT_COMMAND_VALUE         40013
 #define _APS_NEXT_CONTROL_VALUE         1052
 #define _APS_NEXT_SYMED_VALUE           101

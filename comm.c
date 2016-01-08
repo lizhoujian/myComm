@@ -7,6 +7,7 @@
 #include "timeouts.h"
 #include "pinctrl.h"
 #include "resource.h"
+#include "user_fx.h"
 
 struct comm_s comm;
 
@@ -20,6 +21,11 @@ BYTE iStopBit[] = {ONESTOPBIT, ONE5STOPBITS, TWOSTOPBITS};
 char *aDataSize[] = {"8位", "7位", "6位", "5位", NULL};
 BYTE iDataSize[] = {8, 7, 6, 5};
 
+char *aRegType[] = {"X", "Y", "D", "M", "M*", "S", "T", "C", NULL};
+BYTE iRegType[] = {REG_X, REG_Y, REG_D, REG_M, REG_MS, REG_S, REG_T, REG_C};
+char *aRegBitValue[] = {"置位", "复位", NULL};
+BYTE iRegBitValue[] = {1, 0};
+
 //控件句柄
 HWND hWndMain;
 HWND hComPort;
@@ -27,6 +33,9 @@ HWND hBaudRate;
 HWND hParity;
 HWND hDataSize;
 HWND hStopBit;
+HWND hRegBitType;
+HWND hRegBitValue;
+HWND hRegByteType;
 
 //数据结构
 //DCB cdcb;
@@ -147,6 +156,9 @@ void init(void)
     _GETHWND(hParity, IDC_CBO_CHK);
     _GETHWND(hDataSize, IDC_CBO_DATA);
     _GETHWND(hStopBit, IDC_CBO_STOP);
+    _GETHWND(hRegBitType, IDC_REG_TYPE);
+    _GETHWND(hRegByteType, IDC_REG_TYPE2);
+    _GETHWND(hRegBitValue, IDC_REG_BIT_VALUE);
 #undef _GETHWND
 #pragma warning(push)
 #pragma warning(disable:4127)
@@ -161,6 +173,9 @@ void init(void)
     _SETLIST(aParity, hParity, 0);		//校验位,无
     _SETLIST(aStopBit, hStopBit, 0);		//停止位,0
     _SETLIST(aDataSize, hDataSize, 0);	//数据长度,8位/字节
+    _SETLIST(aRegType, hRegBitType, 0);
+    _SETLIST(aRegType, hRegByteType, 0);
+    _SETLIST(aRegBitValue, hRegBitValue, 0);
 #undef _SETLIST
 #pragma warning(pop)
 

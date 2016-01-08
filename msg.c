@@ -132,7 +132,7 @@ LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 int run_app(void)
 {
     HINSTANCE hInstance = GetModuleHandle(NULL);
-    return DialogBoxParam(hInstance, MAKEINTRESOURCE(IDD_DLG_MAIN), NULL, (DLGPROC)MainWndProc, (LPARAM)hInstance);
+    return DialogBoxParam(hInstance, MAKEINTRESOURCE(IDD_DLG_MAIN1), NULL, (DLGPROC)MainWndProc, (LPARAM)hInstance);
 }
 
 int on_timer(int id)
