@@ -384,9 +384,9 @@ static void send_to_fx(unsigned char *data, int len)
 static void appendSent(unsigned char *s)
 {
     int len;
-    len = Edit_GetTextLength(msg.hEditRecv);
-    Edit_SetSel(msg.hEditRecv, len, len);
-    Edit_ReplaceSel(msg.hEditRecv, s);
+    len = Edit_GetTextLength(msg.hEditRecv2);
+    Edit_SetSel(msg.hEditRecv2, len, len);
+    Edit_ReplaceSel(msg.hEditRecv2, s);
 }
 
 static void appendSentHex(unsigned char *s, int len)
@@ -420,11 +420,29 @@ static void fxSend(unsigned char c)
     send_to_fx(&c, 1);
 }
 
-static void write_read_test1(void)
+static void write_read_testX(void)
 {
     int data_len = 2;
     int i;
-    unsigned char bytes[20] = {0x35, 0x84};
+    unsigned char bytes[20] = {0x12, 0x34};
+
+    fx_write(REG_X, 0, bytes, data_len);
+    appendSentLR();
+    fx_read(REG_X, 0, bytes, data_len);
+    TRACE("read bytes is ");
+    for (i = 0; i < data_len; i++) {
+        TRACE("%02x ", bytes[i]);
+    }
+    TRACE("\n");
+    appendSentLR();
+}
+
+static void write_read_testY(void)
+{
+    int data_len = 2;
+    int i;
+    //unsigned char bytes[20] = {0X35, 0X84};
+	unsigned char bytes[20] = {0X5A, 0XA5};
 
     fx_write(REG_Y, 0, bytes, data_len);
     appendSentLR();
@@ -437,15 +455,123 @@ static void write_read_test1(void)
     appendSentLR();
 }
 
-static void write_read_test2(void)
+static void write_read_testM(void)
+{
+    int data_len = 2;
+    int i;
+    unsigned char bytes[20] = {0x34, 0x12};
+
+    fx_write(REG_M, 100, bytes, data_len);
+    appendSentLR();
+    fx_read(REG_M, 100, bytes, data_len);
+    TRACE("read bytes is ");
+    for (i = 0; i < data_len; i++) {
+        TRACE("%02x ", bytes[i]);
+    }
+    TRACE("\n");
+    appendSentLR();
+}
+
+static void write_read_testD(void)
 {
     int i;
     int data_len = 4;
-    unsigned char bytes[20] = {0x34, 0x12, 0xcd, 0xab};
+    unsigned char bytes[20] = {0x54, 0x67, 0xcd, 0xab};
 
-    fx_write(REG_D, 123, bytes, data_len);
+    fx_write(REG_D, 100, bytes + 10, data_len);
     appendSentLR();
-    fx_read(REG_D, 123, bytes, data_len);
+    fx_read(REG_D, 100, bytes + 10, data_len);
+    TRACE("read bytes is ");
+    for (i = 0; i < data_len; i++) {
+        TRACE("%02x ", bytes[i]);
+    }
+    TRACE("\n");
+    appendSentLR();
+    fx_read(REG_D, 100, bytes, data_len);
+    TRACE("read bytes is ");
+    for (i = 0; i < data_len; i++) {
+        TRACE("%02x ", bytes[i]);
+    }
+    TRACE("\n");
+    appendSentLR();
+
+    fx_write(REG_D, 100, bytes, data_len);
+    appendSentLR();
+    fx_read(REG_D, 100, bytes, data_len);
+    TRACE("read bytes is ");
+    for (i = 0; i < data_len; i++) {
+        TRACE("%02x ", bytes[i]);
+    }
+    TRACE("\n");
+    appendSentLR();
+    fx_read(REG_D, 100, bytes, data_len);
+    TRACE("read bytes is ");
+    for (i = 0; i < data_len; i++) {
+        TRACE("%02x ", bytes[i]);
+    }
+    TRACE("\n");
+    appendSentLR();
+}
+
+static void write_read_testC(void)
+{
+    int data_len = 2;
+    int i;
+    unsigned char bytes[20] = {0x34, 0x12};
+
+    fx_write(REG_C, 0, bytes, data_len);
+    appendSentLR();
+    fx_read(REG_C, 0, bytes, data_len);
+    TRACE("read bytes is ");
+    for (i = 0; i < data_len; i++) {
+        TRACE("%02x ", bytes[i]);
+    }
+    TRACE("\n");
+    appendSentLR();
+}
+
+static void write_read_testT(void)
+{
+    int data_len = 2;
+    int i;
+    unsigned char bytes[20] = {0x34, 0x12};
+
+    fx_write(REG_T, 0, bytes, data_len);
+    appendSentLR();
+    fx_read(REG_T, 0, bytes, data_len);
+    TRACE("read bytes is ");
+    for (i = 0; i < data_len; i++) {
+        TRACE("%02x ", bytes[i]);
+    }
+    TRACE("\n");
+    appendSentLR();
+}
+static void write_read_testS(void)
+{
+    int data_len = 2;
+    int i;
+    unsigned char bytes[20] = {0x34, 0x12};
+
+    fx_write(REG_S, 0, bytes, data_len);
+    appendSentLR();
+    fx_read(REG_S, 0, bytes, data_len);
+    TRACE("read bytes is ");
+    for (i = 0; i < data_len; i++) {
+        TRACE("%02x ", bytes[i]);
+    }
+    TRACE("\n");
+    appendSentLR();
+}
+
+static void write_read_testMS(void)
+{
+    int data_len = 4;
+    int i;
+    unsigned char bytes[20] = {0x34, 0x12};
+
+    fx_write(REG_MS, 0, bytes, data_len);
+    appendSentLR();
+    fx_read(REG_MS, 0, bytes, data_len);
     TRACE("read bytes is ");
     for (i = 0; i < data_len; i++) {
         TRACE("%02x ", bytes[i]);
@@ -460,19 +586,23 @@ static void test_enquiry(void)
     appendSentLR();
 }
 
-static void test_onoff1(void)
+static void test_onoffY0(void)
 {
+    fx_force_off(REG_Y, 0);
+    appendSentLR();
+	_sleep(1000);
     fx_force_on(REG_Y, 0);
     appendSentLR();
+	_sleep(1000);
     fx_force_off(REG_Y, 0);
     appendSentLR();
 }
 
-static void test_onoff2(void)
+static void test_onoffY19(void)
 {
-    fx_force_on(REG_Y, 19); // Y23 - 8进制
+    fx_force_on(REG_Y, 3); // Y23 - 8进制
     appendSentLR();
-    fx_force_off(REG_Y, 19);
+    fx_force_off(REG_Y, 3);
     appendSentLR();
 }
 
@@ -481,13 +611,19 @@ static unsigned int __stdcall fx_send_test(void* p)
     uart_set_tx_cb(fxSend);
     uart_set_tx_string_cb(fx_send_string);
 
-    test_enquiry();
+    //test_enquiry();
 
-    test_onoff1();
-    test_onoff2();
+    //test_onoffY0();
+    test_onoffY19();
 
-    write_read_test1();
-    write_read_test2();
+    //write_read_testX();
+    //write_read_testY();
+	//write_read_testD();
+	//write_read_testM();
+	//write_read_testT();
+	//write_read_testS();
+	//write_read_testC(); //RETURN 39
+	//write_read_testMS();
 
     return 0;
 }
