@@ -19,7 +19,7 @@ typedef struct _SEND_DATA
 struct deal_s
 {
     void (*do_check_recv_buf)(void);
-    int (*do_buf_send)(int action);
+    int (*do_buf_send)(int action, int len);
     int (*do_buf_recv)(unsigned char *chs, int cb, int action);
     void (*update_status)(char *str);
     void (*update_savebtn_status)(void);
@@ -28,7 +28,11 @@ struct deal_s
     unsigned int (__stdcall *thread_read)(void *pv);
     unsigned int (__stdcall *thread_write)(void *pv);
     void (*do_send)(void);
+    void (*init_ui)(void);
     void (*do_send_fx)(void);
+	void (*do_fx_bit)(void);
+	void (*do_fx_byte_read)(void);
+	void (*do_fx_byte_write)(void);
     void (*start_timer)(int start);
     //....
     int last_show;

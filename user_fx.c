@@ -15,7 +15,7 @@
 #include <windows.h>
 #include <process.h>
 // test response for windows
-#define __WINDOWS_TEST__
+//#define __WINDOWS_TEST__
 
 typedef void * xQueueHandle;
 typedef void * xSemaphoreHandle;
@@ -122,9 +122,11 @@ typedef struct register_t
     u32 bit_base_addr; /* base address for current */
     u32 (*addr)(void *r, u16 offset, bool bit); /* calc address */
     u8 unit_len; /* bytes for per address */
+    u32 funcs; /* support functions force on\off, read\write */
+    bool write_by_bit; /* write operate replace by bit operate */
 } register_t;
 
-#define WAIT_RECV_TIMEOUT 2000
+#define WAIT_RECV_TIMEOUT 3000
 
 typedef struct uart_event_t
 {
@@ -169,7 +171,7 @@ static void uart_cb(u8 c)
         p->data[p->index++] = c;
         parse_buf(p, p->index);
     } else {
-        TRACE("overflow or not init c=%x, index=%d, len=%d ???\n", p->index, p->len);
+        TRACE("overflow or not init c=%x, index=%d, len=%d ???\n", c, p->index, p->len);
     }
 
     xSemaphoreGiveFromISR(uart_queue_recv, NULL);
@@ -259,11 +261,12 @@ static bool wait_recv_done(u16 miliseconds)
     }
 
 #ifdef __WINDOWS__
-    miliseconds /= (1000 / portTICK_RATE_MS);
-    while (miliseconds-- > 0) {
-        _sleep(1000 / portTICK_RATE_MS);
+    miliseconds /= 5;
+    while (miliseconds-- != 0) {
+        _sleep(5);
         if (p->data && (p->index == p->len || p->data[0] == NAK || p->data[0] == ACK)) {
             ret = true;
+            break;
         }
     }
     ret = true;
@@ -276,6 +279,7 @@ static bool wait_recv_done(u16 miliseconds)
         ret = false;
     }
 #endif
+    TRACE("fx recv: ");
     for (i = 0; i < p->len; i++) {
         TRACE("%02x ", p->data[i]);
     }
@@ -402,25 +406,34 @@ static u32 calc_address(void *r, u16 offset, bool bit)
      return get_base(r, bit) + offset * get_unit_len(r);
 }
 
+#define FUNCTION_FORCE_ON (1 << ACTION_FORCE_ON)
+#define FUNCTION_FORCE_OFF (1 << ACTION_FORCE_OFF)
+#define FUNCTION_READ (1 << ACTION_READ)
+#define FUNCTION_WRITE (1 << ACTION_WRITE)
+
+#define FUNCTION_OF (FUNCTION_FORCE_ON | FUNCTION_FORCE_OFF)
+#define FUNCTION_WR (FUNCTION_READ | FUNCTION_WRITE)
+#define FUNCTION_ALL (FUNCTION_OF | FUNCTION_WR)
+
 static register_t registers[] = {
-    {REG_S, REG_S_BASE_ADDRESS, REG_S_BIT_BASE_ADDRESS, calc_address, 1},
-    {REG_X, REG_X_BASE_ADDRESS, REG_X_BIT_BASE_ADDRESS, calc_address, 1},
-    {REG_Y, REG_Y_BASE_ADDRESS, REG_Y_BIT_BASE_ADDRESS, calc_address, 1},
-    {REG_T, REG_T_BASE_ADDRESS, REG_T_BIT_BASE_ADDRESS, calc_address, 1},
-    {REG_M, REG_M_BASE_ADDRESS, REG_M_BIT_BASE_ADDRESS, calc_address, 1},
-    {REG_C, REG_C_BASE_ADDRESS, REG_C_BIT_BASE_ADDRESS, calc_address, 1},
-    {REG_MS, REG_MS_BASE_ADDRESS, REG_MS_BIT_BASE_ADDRESS, calc_address, 1},
-    {REG_D, REG_D_BASE_ADDRESS, REG_D_BIT_BASE_ADDRESS, calc_address, 2},
-    {REG_YP, REG_YP_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 1},
-    {REG_TO, REG_TO_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 1},
-    {REG_MP, REG_MP_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 1},
-    {REG_CO, REG_CO_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 1},
-    {REG_TR, REG_TR_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 1},
-    {REG_CR, REG_CR_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 1},
-    {REG_TV16, REG_TV16_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 2},
-    {REG_CV16, REG_CV16_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 2},
-    {REG_CV32, REG_CV32_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 4},
-    {REG_DS, REG_DS_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 2},
+    {REG_S, REG_S_BASE_ADDRESS, REG_S_BIT_BASE_ADDRESS, calc_address, 1, FUNCTION_ALL, true},
+    {REG_X, REG_X_BASE_ADDRESS, REG_X_BIT_BASE_ADDRESS, calc_address, 1, FUNCTION_READ, false},
+    {REG_Y, REG_Y_BASE_ADDRESS, REG_Y_BIT_BASE_ADDRESS, calc_address, 1, FUNCTION_ALL, true},
+    {REG_T, REG_T_BASE_ADDRESS, REG_T_BIT_BASE_ADDRESS, calc_address, 1, FUNCTION_ALL, true},
+    {REG_M, REG_M_BASE_ADDRESS, REG_M_BIT_BASE_ADDRESS, calc_address, 1, FUNCTION_ALL, true},
+    {REG_C, REG_C_BASE_ADDRESS, REG_C_BIT_BASE_ADDRESS, calc_address, 1, FUNCTION_ALL, true},
+    {REG_MS, REG_MS_BASE_ADDRESS, REG_MS_BIT_BASE_ADDRESS, calc_address, 1, FUNCTION_ALL, false},
+    {REG_D, REG_D_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 2, FUNCTION_WR, false},
+    {REG_YP, REG_YP_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 1, FUNCTION_WR, false},
+    {REG_TO, REG_TO_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 1, FUNCTION_WR, false},
+    {REG_MP, REG_MP_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 1, FUNCTION_WR, false},
+    {REG_CO, REG_CO_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 1, FUNCTION_WR, false},
+    {REG_TR, REG_TR_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 1, FUNCTION_WR, false},
+    {REG_CR, REG_CR_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 1, FUNCTION_WR, false},
+    {REG_TV16, REG_TV16_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 2, FUNCTION_WR, false},
+    {REG_CV16, REG_CV16_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 2, FUNCTION_WR, false},
+    {REG_CV32, REG_CV32_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 4, FUNCTION_WR, false},
+    {REG_DS, REG_DS_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 2, FUNCTION_WR, false},
 };
 
 static register_t *find_registers(u8 addr_type)
@@ -566,6 +579,11 @@ static void create_thread(unsigned int (__stdcall *t)(void *p), void *p)
 }
 #endif
 
+static bool has_cmd(register_t *r, u8 cmd)
+{
+    return ((1 << cmd) & r->funcs) != 0;
+}
+
 static bool fx_execute(u8 addr_type, u8 cmd, u16 addr, u8 *inout, u16 inout_len)
 {
     register_t *r;
@@ -575,7 +593,7 @@ static bool fx_execute(u8 addr_type, u8 cmd, u16 addr, u8 *inout, u16 inout_len)
 
     //if (fx_enquiry()) {
         r = find_registers(addr_type);
-        if (r) {
+        if (r && has_cmd(r, cmd)) {
             if ((rlen = create_request(r, cmd, addr, (cmd == ACTION_WRITE ? inout : NULL), inout_len, &req)) > 0) {
                 create_response(cmd, inout_len);
                 send_request(req, rlen);
@@ -686,7 +704,10 @@ bool fx_read(u8 addr_type, u16 addr, u8 *out, u16 len)
 
 bool fx_write(u8 addr_type, u16 addr, u8 *data, u16 len)
 {
-    if (addr_type == REG_M || addr_type == REG_Y) {
+    register_t *r;
+    
+    r = find_registers(addr_type);
+    if (r && r->write_by_bit) {
         return fx_write_by_bit(addr_type, addr, data, len);
     } else {
         return fx_execute(addr_type, ACTION_WRITE, addr, data, len);

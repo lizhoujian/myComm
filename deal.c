@@ -1,4 +1,5 @@
 #define __DEAL_C__
+#include <stdlib.h>
 #include "deal.h"
 #include "msg.h"
 #include "utils.h"
@@ -6,13 +7,31 @@
 #include "about.h"
 #include "debug.h"
 #include "resource.h"
+#include "user_fx.h"
 
 #pragma comment(lib,"WinMM")
 #pragma comment(lib, "Kernel32")
 
+char *aRegType[] = {"X", "Y", "D", "M", "M*", "S", "T", "C", NULL};
+BYTE iRegType[] = {REG_X, REG_Y, REG_D, REG_M, REG_MS, REG_S, REG_T, REG_C};
+char *aRegBitValue[] = {"置位", "复位", NULL};
+BYTE iRegBitValue[] = {1, 0};
+
+HWND hRegBitType;
+HWND hRegBitValue;
+HWND hRegByteType;
+
 struct deal_s deal;
 
+void init_reg_controls(void);
+void fxSend(unsigned char c);
+void fx_send_string(unsigned char *data, unsigned short len);
+
 void do_send_fx(void);
+
+void do_fx_bit(void);
+void do_fx_byte_read(void);
+void do_fx_byte_write(void);
 
 void init_deal(void)
 {
@@ -28,8 +47,41 @@ void init_deal(void)
     deal.check_auto_send = check_auto_send;
     deal.do_send = do_send;
     deal.do_send_fx = do_send_fx;
+	deal.do_fx_bit = do_fx_bit;
+	deal.do_fx_byte_read = do_fx_byte_read;
+	deal.do_fx_byte_write = do_fx_byte_write;
     deal.start_timer = start_timer;
     deal.last_show = 1;
+    deal.init_ui = init_reg_controls;
+}
+
+static void init_reg_controls(void)
+{
+    int it;
+#define _GETHWND(name, id) \
+		name = GetDlgItem(msg.hWndMain,id)
+
+    _GETHWND(hRegBitType, IDC_REG_TYPE);
+    _GETHWND(hRegByteType, IDC_REG_TYPE2);
+    _GETHWND(hRegBitValue, IDC_REG_BIT_VALUE);
+#undef _GETHWND
+#pragma warning(push)
+#pragma warning(disable:4127)
+#define _SETLIST(_array,_hwnd,_init) \
+		do{\
+			for(it=0; _array[it]; it++)\
+				ComboBox_AddString(_hwnd,_array[it]);\
+			ComboBox_SetCurSel(_hwnd,_init);\
+		}while(0)
+
+    _SETLIST(aRegType, hRegBitType, 0);
+    _SETLIST(aRegType, hRegByteType, 0);
+    _SETLIST(aRegBitValue, hRegBitValue, 0);
+#undef _SETLIST
+#pragma warning(pop)
+
+    uart_set_tx_cb(fxSend);
+    uart_set_tx_string_cb(fx_send_string);
 }
 
 //更新 保存到文件 按钮的状态
@@ -411,6 +463,7 @@ static void appendSentLR(void)
 static void fx_send_string(unsigned char *data, unsigned short len)
 {
     appendSentHex(data, len);
+    appendSentLR();
     send_to_fx(data, len);
 }
 
@@ -653,6 +706,163 @@ static unsigned int __stdcall fx_send_test(void* p)
 	//write_read_testMS();
 
     return 0;
+}
+
+static int check_comm_opened(void)
+{
+    if (msg.hComPort == INVALID_HANDLE_VALUE)
+    {
+        //另有一个原因是读线程关闭了该句柄(因为错误, 比如串口被移除)
+        char text[32];
+        GetWindowText(GetDlgItem(msg.hWndMain, IDC_BTN_OPEN), text, sizeof(text));
+        if (strcmp(text, "关闭串口") == 0)  //说明正是由于错误所致
+        {
+            msg.on_command(NULL, IDC_BTN_OPEN, 0);
+            return 0;
+        }
+        utils.msgbox(MB_ICONEXCLAMATION, "警告", "请先打开串口设备!");
+        deal.update_status("请先设置相应参数然后打开串口再发送!");
+        return 0;
+    } else {
+        return 1;
+    }
+}
+
+static unsigned int __stdcall do_fx_bit_thread(void *pv)
+{
+	int index;
+	char text[32] = {0,};
+	u8 addr_type = 0;
+	u16 addr = 0;
+	u8 value = 0;
+    bool ret;
+
+    if (check_comm_opened()) {
+	    index = ComboBox_GetCurSel(hRegBitType);
+	    if (index != CB_ERR) {
+		    addr_type = iRegType[index];
+	    }
+
+	    GetWindowText(GetDlgItem(msg.hWndMain, IDC_REG_BIT_ADDR), text, sizeof(text));
+	    addr = atoi(text);
+
+	    index = ComboBox_GetCurSel(hRegBitValue);
+	    if (index != CB_ERR) {
+		    value = iRegBitValue[index];
+	    }
+	    if (value != 0) {
+		    ret = fx_force_on(addr_type, addr);
+	    } else {
+		    ret = fx_force_off(addr_type, addr);
+	    }
+
+        if (!ret) {
+            utils.msgbox(MB_ICONERROR, "失败", "执行位操作失败！");
+        }
+    }
+    EnableWindow(GetDlgItem(msg.hWndMain, IDC_BTN_BIT_EXEC), TRUE);
+    return 0;
+}
+
+static void do_fx_bit(void)
+{
+    EnableWindow(GetDlgItem(msg.hWndMain, IDC_BTN_BIT_EXEC), FALSE);
+    _beginthreadex(NULL, 0, do_fx_bit_thread, 0, 0, NULL);
+}
+
+static unsigned int __stdcall do_fx_byte_read_thread(void *pv)
+{	
+    int index;
+	char text[32] = {0,};
+	u8 addr_type = 0;
+	u16 addr = 0;
+    u16 len = 0;
+	u8 *buf;
+    int i;
+    bool ret = false;
+
+    if (check_comm_opened()) {
+	    index = ComboBox_GetCurSel(hRegByteType);
+	    if (index != CB_ERR) {
+		    addr_type = iRegType[index];
+	    }
+
+	    GetWindowText(GetDlgItem(msg.hWndMain, IDC_REG_BYTE_ADDR), text, sizeof(text));
+	    addr = atoi(text);
+
+        len = fx_unit_len(addr_type);
+        if (len > 0) {
+            buf = (u8*)malloc(len + 1);
+            if (buf) {
+                memset(buf, 0, len + 1);
+                ret = fx_read(addr_type, addr, buf, len);
+                if (ret) {
+                    memset(text, 0, sizeof(text));
+                    for (i = 0; i < len; i++) {
+                        sprintf(text, "%02x", buf[i]);
+                    }
+                    {
+                        HWND hByteRead = GetDlgItem(msg.hWndMain, IDC_REG_BYTE_READ);
+                        SetWindowText(hByteRead, text);
+                    }
+                }
+            }
+        }
+
+        if (!ret) {
+            utils.msgbox(MB_ICONERROR, "失败", "执行读操作失败！");
+        }
+    }
+    EnableWindow(GetDlgItem(msg.hWndMain, IDC_BTN_BYTE_READ), TRUE);
+    return 0;
+}
+
+static void do_fx_byte_read(void)
+{
+    EnableWindow(GetDlgItem(msg.hWndMain, IDC_BTN_BYTE_READ), FALSE);
+    _beginthreadex(NULL, 0, do_fx_byte_read_thread, 0, 0, NULL);
+}
+
+static unsigned int __stdcall do_fx_byte_write_thread(void *pv)
+{
+    int index;
+	char text[32] = {0,};
+	u8 addr_type = 0;
+	u16 addr = 0;
+    u16 len = 0;
+	u32 value;
+    int i;
+    bool ret = false;
+
+    if (check_comm_opened()) {
+	    index = ComboBox_GetCurSel(hRegByteType);
+	    if (index != CB_ERR) {
+		    addr_type = iRegType[index];
+	    }
+
+	    GetWindowText(GetDlgItem(msg.hWndMain, IDC_REG_BYTE_ADDR), text, sizeof(text));
+	    addr = atoi(text);
+
+        GetWindowText(GetDlgItem(msg.hWndMain, IDC_REG_BYTE_WRITE), text, sizeof(text));
+        value = atoi(text);
+
+        len = fx_unit_len(addr_type);
+        if (len > 0) {
+            ret = fx_write(addr_type, addr, (u8*)&value, len);
+        }
+
+        if (!ret) {
+            utils.msgbox(MB_ICONERROR, "失败", "执行写操作失败！");
+        }
+    }
+    EnableWindow(GetDlgItem(msg.hWndMain, IDC_BTN_BYTE_WRITE), TRUE);
+    return 0;
+}
+
+static void do_fx_byte_write(void)
+{
+    EnableWindow(GetDlgItem(msg.hWndMain, IDC_BTN_BYTE_WRITE), FALSE);
+    _beginthreadex(NULL, 0, do_fx_byte_write_thread, 0, 0, NULL);
 }
 
 //读操作线程

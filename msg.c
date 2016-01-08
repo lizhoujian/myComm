@@ -53,16 +53,16 @@ LRESULT CALLBACK RecvEditWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
         return ret;
     }
     case WM_LBUTTONDOWN:
-    case WM_MOUSEMOVE:
+    case WM_MOUSEMOVE:/*
         if(fEnableSelect == 0 || comm.fShowDataReceived && msg.hComPort != INVALID_HANDLE_VALUE)
         {
             return 0;
-        }
+        }*/
         break;
-    case WM_CONTEXTMENU:
+    case WM_CONTEXTMENU:/*
         if(comm.fShowDataReceived && msg.hComPort != INVALID_HANDLE_VALUE)
             return 0;
-        else
+        else*/
             break;
     }
     return CallWindowProc(OldRecvEditWndProc, hWnd, uMsg, wParam, lParam);
@@ -85,13 +85,14 @@ LRESULT CALLBACK Recv2EditWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
         return ret;
     }
     case WM_LBUTTONDOWN:
-    case WM_MOUSEMOVE:
+    case WM_MOUSEMOVE:/*
         if(fEnableSelect == 0 || comm.fShowDataReceived && msg.hComPort != INVALID_HANDLE_VALUE)
         {
             return 0;
-        }
+        }*/
         break;
     case WM_CONTEXTMENU:
+/*
         if(msg.hComPort != INVALID_HANDLE_VALUE && comm.fShowDataReceived)
         {
             POINT pt;
@@ -102,7 +103,7 @@ LRESULT CALLBACK Recv2EditWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
             TrackPopupMenu(hEditMenu, TPM_LEFTALIGN, pt.x, pt.y, 0, msg.hWndMain, NULL);
             return 0;
         }
-        else
+        else*/
         {
             break;
         }
@@ -184,12 +185,13 @@ int on_create(HWND hWnd, HINSTANCE hInstance)
     SendDlgItemMessage(msg.hWndMain, IDC_EDIT_RECV2, EM_SETLIMITTEXT, (WPARAM)COMMON_RECV_BUF_SIZE, 0);
     OldRecvEditWndProc = (WNDPROC)SetWindowLong(GetDlgItem(msg.hWndMain, IDC_EDIT_RECV), GWL_WNDPROC, (LONG)RecvEditWndProc);
     OldRecv2EditWndProc = (WNDPROC)SetWindowLong(GetDlgItem(msg.hWndMain, IDC_EDIT_RECV2), GWL_WNDPROC, (LONG)Recv2EditWndProc);
-    ShowWindow(msg.hEditRecv2, FALSE);
+    ShowWindow(msg.hEditRecv2, TRUE);
     //TODO:
     comm.init();
     comm.update((int *) - 1);
     if(ComboBox_GetCount(GetDlgItem(hWnd, IDC_CBO_CP)) == 0)
         deal.update_status("没有任何可用的串口!");
+    deal.init_ui();
     deal.do_buf_send(0, 0);
     return 0;
 }
@@ -391,6 +393,15 @@ int on_command(HWND hWndCtrl, int id, int codeNotify)
     case IDC_BTN_SEND:
         deal.do_send();
         return 0;
+	case IDC_BTN_BIT_EXEC:
+		deal.do_fx_bit();
+		return 0;
+	case IDC_BTN_BYTE_READ:
+		deal.do_fx_byte_read();
+		return 0;
+	case IDC_BTN_BYTE_WRITE:
+		deal.do_fx_byte_write();
+		return 0;
     case IDC_BTN_SEND2:
         deal.do_send_fx();
         return 0;
@@ -446,7 +457,7 @@ int on_command(HWND hWndCtrl, int id, int codeNotify)
         {
             GetWindowRect(hWndCtrl, &rc);
             ShowWindow(msg.hEditRecv, FALSE);
-            ShowWindow(msg.hEditRecv2, FALSE);
+            ShowWindow(msg.hEditRecv2, TRUE);
             ShowWindow(GetDlgItem(msg.hWndMain, IDC_STATIC_RECV), FALSE);
             SetWindowPos(hWndCtrl, 0, 0, 0, rc.right - rc.left + 300, rc.bottom - rc.top, SWP_NOMOVE | SWP_NOZORDER);
             //utils.msgbox(0,NULL,(char*)comm.update((int*)(16+ComboBox_GetCurSel(hWndCtrl))));

@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
-// Microsoft Visual C++ generated include file.
-// Used by spdbg.rc
+// Microsoft Visual C++ 生成的包含文件。
+// 供 spdbg.rc 使用
 //
 #define IDD_DLG_MAIN                    101
 #define IDI_ICON1                       106
@@ -57,14 +57,17 @@
 #define IDC_REG_TYPE2                   1033
 #define IDC_CTO_EDIT_READ_INTERVAL      1034
 #define IDC_REG_BYTE_ADDR2              1034
+#define IDC_REG_BYTE_ADDR               1034
 #define IDC_CTO_EDIT_READ_MULTIPLIER    1035
 #define IDC_BTN_BYTE_EXEC               1035
+#define IDC_BTN_BYTE_WRITE              1035
 #define IDC_CTO_EDIT_READ_CONSTANT      1036
 #define IDC_REG_BYTE_WRITE              1036
 #define IDC_CTO_EDIT_WRITE_MULTIPLIER   1037
 #define IDC_REG_BYTE_WRITE2             1037
 #define IDC_REG_BYTE_READ               1037
 #define IDC_CTO_EDIT_WRITE_CONSTANT     1038
+#define IDC_BTN_BYTE_READ               1038
 #define IDC_CTO_BTN_OK                  1040
 #define IDC_CTO_BTN_CANCEL              1041
 #define IDC_CTO_BTN_DEFAULT             1042
