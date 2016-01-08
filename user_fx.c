@@ -115,7 +115,7 @@ typedef struct register_t
     u32 byte_base_addr; /* base address for current */
     u32 bit_base_addr; /* base address for current */
     u32 (*addr)(void *r, u16 offset, bool bit); /* calc address */
-    u8 addr_len; /* bytes of address */
+    u8 unit_len; /* bytes for per address */
 } register_t;
 
 #define WAIT_RECV_TIMEOUT 2000
@@ -373,47 +373,35 @@ static u32 get_base(void *r, bool bit)
     register_t *t = (register_t*)r;
     return (bit ? t->bit_base_addr : t->byte_base_addr);
 }
-
+static u8 get_unit_len(void *r)
+{
+    register_t *t = (register_t*)r;
+    return t->unit_len;
+}
 static u32 calc_address(void *r, u16 offset, bool bit)
 {
-     return get_base(r, bit) + offset;
-}
-
-static u32 calc_address2(void *r, u16 offset, bool bit)
-{
-    return get_base(r, bit) + offset * 2;
-}
-
-static u32 calc_address3(void *r, u16 offset, bool bit)
-{
-    return get_base(r, bit) + offset * 3;
-}
-
-static u32 swap_address(void *r, u32 addr)
-{
-    register_t *t = (register_t*)r;
-    return addr;
-}
-
-static u32 swap_address2(void *r, u32 addr)
-{
-    register_t *t = (register_t*)r;
-    u16 addr16 = (u16)addr;
-    if (t->addr_len == 2) {
-        return SWAP_BYTE(addr16);
-    } else {
-        return addr;
-    }
+     return get_base(r, bit) + offset * get_unit_len(r);
 }
 
 static register_t registers[] = {
-    {REG_D, REG_D_BASE_ADDRESS, REG_D_BIT_BASE_ADDRESS, calc_address2, 2},
-    {REG_M, REG_M_BASE_ADDRESS, REG_M_BIT_BASE_ADDRESS, calc_address2, 2},
-    {REG_T, REG_T_BASE_ADDRESS, REG_T_BIT_BASE_ADDRESS, calc_address, 2},
-    {REG_S, REG_S_BASE_ADDRESS, REG_S_BIT_BASE_ADDRESS, calc_address3, 3},
-    {REG_C, REG_C_BASE_ADDRESS, REG_C_BIT_BASE_ADDRESS, calc_address2, 2},
-    {REG_X, REG_X_BASE_ADDRESS, REG_X_BIT_BASE_ADDRESS, calc_address, 2},
-    {REG_Y, REG_Y_BASE_ADDRESS, REG_Y_BIT_BASE_ADDRESS, calc_address, 2},
+    {REG_S, REG_S_BASE_ADDRESS, REG_S_BIT_BASE_ADDRESS, calc_address, 1},
+    {REG_X, REG_X_BASE_ADDRESS, REG_X_BIT_BASE_ADDRESS, calc_address, 1},
+    {REG_Y, REG_Y_BASE_ADDRESS, REG_Y_BIT_BASE_ADDRESS, calc_address, 1},
+    {REG_T, REG_T_BASE_ADDRESS, REG_T_BIT_BASE_ADDRESS, calc_address, 1},
+    {REG_M, REG_M_BASE_ADDRESS, REG_M_BIT_BASE_ADDRESS, calc_address, 1},
+    {REG_C, REG_C_BASE_ADDRESS, REG_C_BIT_BASE_ADDRESS, calc_address, 1},
+    {REG_MS, REG_MS_BASE_ADDRESS, REG_MS_BIT_BASE_ADDRESS, calc_address, 1},
+    {REG_D, REG_D_BASE_ADDRESS, REG_D_BIT_BASE_ADDRESS, calc_address, 2},
+    {REG_YP, REG_YP_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 1},
+    {REG_TO, REG_TO_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 1},
+    {REG_MP, REG_MP_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 1},
+    {REG_CO, REG_CO_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 1},
+    {REG_TR, REG_TR_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 1},
+    {REG_CR, REG_CR_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 1},
+    {REG_TV16, REG_TV16_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 2},
+    {REG_CV16, REG_CV16_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 2},
+    {REG_CV32, REG_CV32_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 4},
+    {REG_DS, REG_DS_BASE_ADDRESS, REG_INVALID_ADDRESS, calc_address, 2},
 };
 
 static register_t *find_registers(u8 addr_type)

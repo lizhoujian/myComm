@@ -49,7 +49,7 @@ enum {
     REG_CO,
     REG_TR,
     REG_CR,
-    REG_TV,
+    REG_TV16,
     REG_CV16,
     REG_CV32,
     REG_DS
@@ -89,6 +89,7 @@ enum {
 #define REG_MS_BIT_BASE_ADDRESS 0xf00
 #define REG_D_BIT_BASE_ADDRESS 0x0
 
+#define REG_INVALID_ADDRESS 0x0ffffffff
 #define MAX_DATA_ONETIME 32
 
 bool fx_enquiry(void);
