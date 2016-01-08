@@ -614,10 +614,10 @@ static unsigned int __stdcall fx_send_test(void* p)
     //test_enquiry();
 
     //test_onoffY0();
-    test_onoffY19();
+    //test_onoffY19();
 
     //write_read_testX();
-    //write_read_testY();
+    write_read_testY();
 	//write_read_testD();
 	//write_read_testM();
 	//write_read_testT();

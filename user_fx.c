@@ -15,7 +15,7 @@
 #include <windows.h>
 #include <process.h>
 // test response for windows
-//#define __WINDOWS_TEST__
+#define __WINDOWS_TEST__
 
 typedef void * xQueueHandle;
 typedef void * xSemaphoreHandle;
@@ -73,8 +73,14 @@ void uart_set_tx_string_cb(set_tx_string_cb cb)
 }
 static void uart_send(u8 *data, u16 len)
 {
+    int i;
+
     if (curr_set_tx_string_cb) {
         (*curr_set_tx_string_cb)(data, len);
+    } else {
+        for (i = 0; i < len; i++) {
+            uart_tx_one_char(0, data[i]);
+        }
     }
 }
 
@@ -378,6 +384,7 @@ static u8 get_unit_len(void *r)
     register_t *t = (register_t*)r;
     return t->unit_len;
 }
+
 static u32 calc_address(void *r, u16 offset, bool bit)
 {
      return get_base(r, bit) + offset * get_unit_len(r);
@@ -416,6 +423,16 @@ static register_t *find_registers(u8 addr_type)
     return NULL;
 }
 
+u16 fx_unit_len(u8 addr_type)
+{
+    register_t *r = find_registers(addr_type);
+    if (r) {
+        return r->unit_len;
+    } else {
+        return 0;
+    }
+}
+
 static bool is_little_endian(void)
 {
     u16 d = 0x1234;
@@ -440,7 +457,7 @@ static u16 unit_addr(register_t *r, u8 cmd, u16 addr)
     return raddr;
 }
 
-static u16 create_request2(register_t *r, u8 cmd, u16 addr, u8 *data, u16 len, u8 **req)
+static u16 create_request(register_t *r, u8 cmd, u16 addr, u8 *data, u16 len, u8 **req)
 {
     u8 *buf;
     u16 rlen;
@@ -477,7 +494,7 @@ static u16 create_request2(register_t *r, u8 cmd, u16 addr, u8 *data, u16 len, u
     return 0;
 }
 
-static u16 create_request(register_t *r, u8 cmd, u16 addr, u8 *data, u16 len, u8 **req)
+static u16 create_request2(register_t *r, u8 cmd, u16 addr, u8 *data, u16 len, u8 **req)
 {
     u8 *buf;
     u16 rlen;

@@ -98,5 +98,8 @@ bool fx_force_off(u8 addr_type, u16 addr);
 bool fx_read(u8 addr_type, u16 addr, u8 *out, u16 len);
 bool fx_write(u8 addr_type, u16 addr, u8 *data, u16 len);
 
+// get unit read/write bytes for per address
+u16 fx_unit_len(u8 addr_type);
+
 #endif // __USER_FX_H__
 
