@@ -11,9 +11,18 @@
 #define false 0
 #endif
 
+#ifndef __U8__
+#define __U8__
 typedef unsigned char u8;
+#endif
+#ifndef __U16__
+#define __U16__
 typedef unsigned short u16;
+#endif
+#ifndef __U32__
+#define __U32__
 typedef unsigned int u32;
+#endif
 
 typedef void (*set_tx_cb)(unsigned char c);
 typedef void (*set_tx_string_cb)(unsigned char *data, unsigned short len);

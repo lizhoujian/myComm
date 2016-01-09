@@ -68,7 +68,10 @@
 #define IDC_REG_BYTE_READ               1037
 #define IDC_CTO_EDIT_WRITE_CONSTANT     1038
 #define IDC_BTN_BYTE_READ               1038
+#define IDC_CHK_NETWORK                 1039
 #define IDC_CTO_BTN_OK                  1040
+#define IDC_REG_BYTE_WRITE3             1040
+#define IDC_EDIT_IP                     1040
 #define IDC_CTO_BTN_CANCEL              1041
 #define IDC_CTO_BTN_DEFAULT             1042
 #define IDC_PINCTRL_OK                  1043

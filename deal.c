@@ -8,6 +8,7 @@
 #include "debug.h"
 #include "resource.h"
 #include "user_fx.h"
+#include "user_fx_lan.h"
 
 #pragma comment(lib,"WinMM")
 #pragma comment(lib, "Kernel32")
@@ -728,6 +729,18 @@ static int check_comm_opened(void)
     }
 }
 
+static int network_checked(void)
+{
+    return IsDlgButtonChecked(msg.hWndMain, IDC_CHK_NETWORK);
+}
+
+static u8 *network_ip(u8 *out, int len)
+{
+    memset(out, 0, len);
+    GetWindowText(GetDlgItem(msg.hWndMain, IDC_EDIT_IP), out, len);
+    return out;
+}
+
 static unsigned int __stdcall do_fx_bit_thread(void *pv)
 {
 	int index;
@@ -737,7 +750,9 @@ static unsigned int __stdcall do_fx_bit_thread(void *pv)
 	u8 value = 0;
     bool ret;
 
-    if (check_comm_opened()) {
+    EnableWindow(GetDlgItem(msg.hWndMain, IDC_BTN_BIT_EXEC), FALSE);
+
+    if (check_comm_opened() || network_checked()) {
 	    index = ComboBox_GetCurSel(hRegBitType);
 	    if (index != CB_ERR) {
 		    addr_type = iRegType[index];
@@ -750,12 +765,20 @@ static unsigned int __stdcall do_fx_bit_thread(void *pv)
 	    if (index != CB_ERR) {
 		    value = iRegBitValue[index];
 	    }
-	    if (value != 0) {
-		    ret = fx_force_on(addr_type, addr);
-	    } else {
-		    ret = fx_force_off(addr_type, addr);
-	    }
-
+        if (network_checked()) {
+            network_ip(text, sizeof(text));
+            if (value != 0) {
+                ret = fx_lan_force_on(text, addr_type, addr);
+            } else {
+                ret = fx_lan_force_off(text, addr_type, addr);
+            }
+        } else {
+            if (value != 0) {
+                ret = fx_force_on(addr_type, addr);
+            } else {
+                ret = fx_force_off(addr_type, addr);
+            }
+        }
         if (!ret) {
             utils.msgbox(MB_ICONERROR, "失败", "执行位操作失败！");
         }
@@ -766,7 +789,6 @@ static unsigned int __stdcall do_fx_bit_thread(void *pv)
 
 static void do_fx_bit(void)
 {
-    EnableWindow(GetDlgItem(msg.hWndMain, IDC_BTN_BIT_EXEC), FALSE);
     _beginthreadex(NULL, 0, do_fx_bit_thread, 0, 0, NULL);
 }
 
@@ -782,7 +804,9 @@ static unsigned int __stdcall do_fx_byte_read_thread(void *pv)
     int i;
     bool ret = false;
 
-    if (check_comm_opened()) {
+    EnableWindow(GetDlgItem(msg.hWndMain, IDC_BTN_BYTE_READ), FALSE);
+
+    if (check_comm_opened() || network_checked()) {
 	    index = ComboBox_GetCurSel(hRegByteType);
 	    if (index != CB_ERR) {
 		    addr_type = iRegType[index];
@@ -796,7 +820,12 @@ static unsigned int __stdcall do_fx_byte_read_thread(void *pv)
             buf = (u8*)malloc(len + 1);
             if (buf) {
                 memset(buf, 0, len + 1);
-                ret = fx_read(addr_type, addr, buf, len);
+                if (network_checked()) {
+                    network_ip(text, sizeof(text));
+                    ret = fx_lan_read(text, addr_type, addr, buf, len);
+                } else {
+                    ret = fx_read(addr_type, addr, buf, len);
+                }
                 if (ret) {
                     memset(text, 0, sizeof(text));
                     for (i = 0; i < len; i++) {
@@ -828,10 +857,25 @@ static unsigned int __stdcall do_fx_byte_read_thread(void *pv)
     return 0;
 }
 
+static unsigned int __stdcall do_fx_lan_byte_test_thread(void *pv)
+{
+    u8 *ip = (u8*)"192.168.0.100";
+    u8 bytes[10] = {0x5a, 255, 5};
+  
+    fx_lan_enquiry(ip);
+    fx_lan_force_off(ip, REG_Y, 0);
+    fx_lan_force_on(ip, REG_Y, 0);
+
+    fx_lan_write(ip, REG_Y, 0, bytes, 3);
+    fx_lan_read(ip, REG_Y, 0, bytes, 1);
+
+    return 0;
+}
+
 static void do_fx_byte_read(void)
 {
-    EnableWindow(GetDlgItem(msg.hWndMain, IDC_BTN_BYTE_READ), FALSE);
-    _beginthreadex(NULL, 0, do_fx_byte_read_thread, 0, 0, NULL);
+    //_beginthreadex(NULL, 0, do_fx_byte_read_thread, 0, 0, NULL);
+    _beginthreadex(NULL, 0, do_fx_lan_byte_test_thread, 0, 0, NULL);
 }
 
 static unsigned int __stdcall do_fx_byte_write_thread(void *pv)
@@ -842,10 +886,11 @@ static unsigned int __stdcall do_fx_byte_write_thread(void *pv)
 	u16 addr = 0;
     u16 len = 0;
 	u32 value;
-    int i;
     bool ret = false;
 
-    if (check_comm_opened()) {
+    EnableWindow(GetDlgItem(msg.hWndMain, IDC_BTN_BYTE_WRITE), FALSE);
+
+    if (check_comm_opened() || network_checked()) {
 	    index = ComboBox_GetCurSel(hRegByteType);
 	    if (index != CB_ERR) {
 		    addr_type = iRegType[index];
@@ -859,7 +904,12 @@ static unsigned int __stdcall do_fx_byte_write_thread(void *pv)
 
         len = fx_unit_len(addr_type);
         if (len > 0) {
-            ret = fx_write(addr_type, addr, (u8*)&value, len);
+            if (network_checked()) {
+                network_ip(text, sizeof(text));
+                ret = fx_lan_write(text, addr_type, addr, (u8*)&value, len);
+            } else {
+                ret = fx_write(addr_type, addr, (u8*)&value, len);
+            }
         }
 
         if (!ret) {
@@ -872,7 +922,6 @@ static unsigned int __stdcall do_fx_byte_write_thread(void *pv)
 
 static void do_fx_byte_write(void)
 {
-    EnableWindow(GetDlgItem(msg.hWndMain, IDC_BTN_BYTE_WRITE), FALSE);
     _beginthreadex(NULL, 0, do_fx_byte_write_thread, 0, 0, NULL);
 }
 
@@ -887,7 +936,6 @@ unsigned int __stdcall thread_read(void *pv)
     unsigned char *block_data = NULL;
     DWORD nBytesToRead;
     //OVERLAPPED ow = {0};
-
 
     block_data = (unsigned char *)utils.get_mem(COMMON_READ_BUFFER_SIZE + 1); //+1用来放在前面,保存上一次的中文字符(单字节)
     if(block_data == NULL)

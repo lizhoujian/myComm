@@ -57,6 +57,39 @@
     <ClCompile Include="utils.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ghttp\ghttp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ghttp\http_base64.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ghttp\http_date.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ghttp\http_hdrs.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ghttp\http_req.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ghttp\http_resp.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ghttp\http_trans.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ghttp\http_uri.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="user_fx_lan.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cJSON\cJSON.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="cJSON\cJSON_Utils.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="about.h">
@@ -104,6 +137,48 @@
     <ClInclude Include="utils.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ghttp\ghttp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ghttp\ghttp_constants.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ghttp\http_base64.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ghttp\http_date.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ghttp\http_global.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ghttp\http_hdrs.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ghttp\http_req.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ghttp\http_resp.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ghttp\http_trans.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ghttp\http_uri.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ghttp\unistd.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="user_fx_lan.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cJSON\cJSON.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="cJSON\cJSON_Utils.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="spdbg.rc">
@@ -120,5 +195,8 @@
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="xps.manifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
 </Project>

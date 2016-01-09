@@ -75,10 +75,20 @@
   <ItemGroup>
     <ClCompile Include="about.c" />
     <ClCompile Include="asctable.c" />
+    <ClCompile Include="cJSON\cJSON.c" />
+    <ClCompile Include="cJSON\cJSON_Utils.c" />
     <ClCompile Include="comm.c" />
     <ClCompile Include="deal.c" />
     <ClCompile Include="debug.c" />
     <ClCompile Include="expr.c" />
+    <ClCompile Include="ghttp\ghttp.c" />
+    <ClCompile Include="ghttp\http_base64.c" />
+    <ClCompile Include="ghttp\http_date.c" />
+    <ClCompile Include="ghttp\http_hdrs.c" />
+    <ClCompile Include="ghttp\http_req.c" />
+    <ClCompile Include="ghttp\http_resp.c" />
+    <ClCompile Include="ghttp\http_trans.c" />
+    <ClCompile Include="ghttp\http_uri.c" />
     <ClCompile Include="msg.c" />
     <ClCompile Include="pinctrl.c" />
     <ClCompile Include="spdbg.c" />
@@ -86,15 +96,29 @@
     <ClCompile Include="str2hex.c" />
     <ClCompile Include="timeouts.c" />
     <ClCompile Include="user_fx.c" />
+    <ClCompile Include="user_fx_lan.c" />
     <ClCompile Include="utils.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="about.h" />
     <ClInclude Include="asctable.h" />
+    <ClInclude Include="cJSON\cJSON.h" />
+    <ClInclude Include="cJSON\cJSON_Utils.h" />
     <ClInclude Include="comm.h" />
     <ClInclude Include="deal.h" />
     <ClInclude Include="debug.h" />
     <ClInclude Include="expr.h" />
+    <ClInclude Include="ghttp\ghttp.h" />
+    <ClInclude Include="ghttp\ghttp_constants.h" />
+    <ClInclude Include="ghttp\http_base64.h" />
+    <ClInclude Include="ghttp\http_date.h" />
+    <ClInclude Include="ghttp\http_global.h" />
+    <ClInclude Include="ghttp\http_hdrs.h" />
+    <ClInclude Include="ghttp\http_req.h" />
+    <ClInclude Include="ghttp\http_resp.h" />
+    <ClInclude Include="ghttp\http_trans.h" />
+    <ClInclude Include="ghttp\http_uri.h" />
+    <ClInclude Include="ghttp\unistd.h" />
     <ClInclude Include="msg.h" />
     <ClInclude Include="pinctrl.h" />
     <ClInclude Include="resource.h" />
@@ -103,6 +127,7 @@
     <ClInclude Include="str2hex.h" />
     <ClInclude Include="timeouts.h" />
     <ClInclude Include="user_fx.h" />
+    <ClInclude Include="user_fx_lan.h" />
     <ClInclude Include="utils.h" />
   </ItemGroup>
   <ItemGroup>
@@ -114,6 +139,9 @@
   </ItemGroup>
   <ItemGroup>
     <Manifest Include="xps.manifest" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
