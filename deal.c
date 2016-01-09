@@ -751,8 +751,8 @@ static unsigned int __stdcall do_fx_bit_thread(void *pv)
     bool ret;
 
     EnableWindow(GetDlgItem(msg.hWndMain, IDC_BTN_BIT_EXEC), FALSE);
-
-    if (check_comm_opened() || network_checked()) {
+    
+    if (network_checked() || check_comm_opened()) {
 	    index = ComboBox_GetCurSel(hRegBitType);
 	    if (index != CB_ERR) {
 		    addr_type = iRegType[index];
@@ -806,7 +806,7 @@ static unsigned int __stdcall do_fx_byte_read_thread(void *pv)
 
     EnableWindow(GetDlgItem(msg.hWndMain, IDC_BTN_BYTE_READ), FALSE);
 
-    if (check_comm_opened() || network_checked()) {
+    if (network_checked() || check_comm_opened()) {
 	    index = ComboBox_GetCurSel(hRegByteType);
 	    if (index != CB_ERR) {
 		    addr_type = iRegType[index];
@@ -857,25 +857,44 @@ static unsigned int __stdcall do_fx_byte_read_thread(void *pv)
     return 0;
 }
 
+static void appendSentLR(void);
+static void appendSentHex(unsigned char *s, int len);
+
+static u8 get_ack(bool a)
+{
+    return a ? ACK : NAK;
+}
+
 static unsigned int __stdcall do_fx_lan_byte_test_thread(void *pv)
 {
     u8 *ip = (u8*)"192.168.0.100";
     u8 bytes[10] = {0x5a, 255, 5};
+    u8 ack;
   
-    fx_lan_enquiry(ip);
-    fx_lan_force_off(ip, REG_Y, 0);
-    fx_lan_force_on(ip, REG_Y, 0);
+    ack = get_ack(fx_lan_enquiry(ip));
+    appendSentHex(&ack, 1);
+    appendSentLR();
+    ack = get_ack(fx_lan_force_off(ip, REG_Y, 0));
+    appendSentHex(&ack, 1);
+    appendSentLR();
+    ack = get_ack(fx_lan_force_on(ip, REG_Y, 0));
+    appendSentHex(&ack, 1);
+    appendSentLR();
 
     fx_lan_write(ip, REG_Y, 0, bytes, 3);
+    appendSentHex(bytes, 3);
+    appendSentLR();
     fx_lan_read(ip, REG_Y, 0, bytes, 1);
+    appendSentHex(bytes, 1);
+    appendSentLR();
 
     return 0;
 }
 
 static void do_fx_byte_read(void)
 {
-    //_beginthreadex(NULL, 0, do_fx_byte_read_thread, 0, 0, NULL);
-    _beginthreadex(NULL, 0, do_fx_lan_byte_test_thread, 0, 0, NULL);
+    _beginthreadex(NULL, 0, do_fx_byte_read_thread, 0, 0, NULL);
+    //_beginthreadex(NULL, 0, do_fx_lan_byte_test_thread, 0, 0, NULL);
 }
 
 static unsigned int __stdcall do_fx_byte_write_thread(void *pv)
@@ -890,7 +909,7 @@ static unsigned int __stdcall do_fx_byte_write_thread(void *pv)
 
     EnableWindow(GetDlgItem(msg.hWndMain, IDC_BTN_BYTE_WRITE), FALSE);
 
-    if (check_comm_opened() || network_checked()) {
+    if (network_checked() || check_comm_opened()) {
 	    index = ComboBox_GetCurSel(hRegByteType);
 	    if (index != CB_ERR) {
 		    addr_type = iRegType[index];

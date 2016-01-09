@@ -43,11 +43,37 @@ static u8 *create_url(u8 *ip)
     return r;
 }
 
-static cJSON *create_json(u8 cmd, u8 addr_type, u16 addr, u8 *data, u16 len)
+static void hex_string_to_bytes(u8 *in, u8 *out, u8 len)
+{
+    int i;
+    u8 dst[5] = {0,};
+
+    for (i = 0; i < len; i++) {
+        strcpy(dst, "0X");
+        strncat(dst, &in[i * 2], 2);
+        out[i]= (u8)strtol(dst, NULL, 16);
+    }
+}
+
+static void bytes_to_hex_string(u8 *in, u8 **out, u8 len)
 {
     int i;
     u8 *tmp;
+
+    tmp = (u8*)malloc(len * 2 + 1);
+    if (tmp) {
+        memset(tmp, 0, len * 2 + 1);
+        for (i = 0; i < len; i++) {
+            sprintf(tmp + i * 2, "%02x", in[i]);
+        }
+    }
+    *out = tmp;
+}
+
+static cJSON *create_json(u8 cmd, u8 addr_type, u16 addr, u8 *data, u16 len)
+{
     cJSON *root = NULL;
+    u8 *hex;
 
     root = cJSON_CreateObject();
     if (root) {
@@ -55,16 +81,10 @@ static cJSON *create_json(u8 cmd, u8 addr_type, u16 addr, u8 *data, u16 len)
         cJSON_AddNumberToObject(root, "addr_type", addr_type);
         cJSON_AddNumberToObject(root, "addr", addr);
         if (data && len > 0) {
-            tmp = (u8*)malloc(len * 2 + 1);
-            if (tmp) {
-                memset(tmp, 0, len * 2 + 1);
-                for (i = 0; i < len; i++) {
-                    sprintf(tmp + i * 2, "%02x", data[i]);
-                }
-                cJSON_AddStringToObject(root, "data", (const char*)tmp);
-                free(tmp);
-            } else {
-                TRACE("alloc tmp mem for data failed.\n");
+            bytes_to_hex_string(data, &hex, len);
+            if (hex) {
+                cJSON_AddStringToObject(root, "data", (const char*)hex);
+                free(hex);
             }
         }
         cJSON_AddNumberToObject(root, "len", len);
@@ -127,7 +147,7 @@ static bool post_simple(u8 *ip, u8 cmd, u8 addr_type, u16 addr, u8 *data, u16 le
                 if (sub) {
                     value = (u8*)sub->valuestring;
                     if (value && data) {
-                        strcpy((char*)data, (const char*)value);
+                        hex_string_to_bytes(value, data, len);
                     }
                 }
             }
