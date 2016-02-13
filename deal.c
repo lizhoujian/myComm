@@ -1,4 +1,5 @@
 #define __DEAL_C__
+#include <stdio.h>
 #include <stdlib.h>
 #include "deal.h"
 #include "msg.h"
@@ -21,6 +22,7 @@ BYTE iRegBitValue[] = {1, 0};
 HWND hRegBitType;
 HWND hRegBitValue;
 HWND hRegByteType;
+HWND hRegClentList;
 
 struct deal_s deal;
 
@@ -33,6 +35,96 @@ void do_send_fx(void);
 void do_fx_bit(void);
 void do_fx_byte_read(void);
 void do_fx_byte_write(void);
+
+void stop_client_search(void);
+void start_client_search(void (*append_list)(const char *addr));
+
+#define LIST_SIZE 20
+static char *client_list[LIST_SIZE] = {(char*)NULL,};
+
+static void clear_list(void)
+{
+    int i;
+    for (i = 0; i < LIST_SIZE; i++) {
+        if (client_list[i]) {
+            free(client_list[i]);
+            client_list[i] = NULL;
+        }
+    }
+}
+
+static bool is_exist(const char *addr)
+{
+    int i;
+
+    for (i = 0; i < LIST_SIZE; i++) {
+        if (client_list[i] && strcmp(client_list[i], addr) == 0) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+static void append_list(const char *addr)
+{
+    int i;
+    char *s;
+    
+    if (!addr) return;
+
+    if (is_exist(addr)) return;
+
+    for (i = 0; i < LIST_SIZE; i++) {
+        if (!client_list[i]) {
+            s = (char*)malloc(strlen(addr) + 1);
+            if (s) {
+                memset(s, 0, strlen(addr) + 1);
+                strcpy(s, addr);
+                client_list[i] = s;
+                return;
+            }
+        }
+    } 
+}
+
+static void refresh_list(void)
+{
+    int i, count;
+    HWND h;
+
+    h = GetDlgItem(msg.hWndMain, IDC_REG_CLIENT_LIST);
+    if (!h) return;
+    
+    count = ComboBox_GetCount(h);
+    for (i = count - 1; i >= 0; i--) {
+        ComboBox_DeleteString(h, i);
+    }
+    for (i = 0; i < LIST_SIZE; i++) {
+        ComboBox_AddString(h, client_list[i]);
+    }
+    ComboBox_SetCurSel(h, 0);
+}
+
+static void do_client_search(void)
+{
+    static HWND h = NULL;
+    static bool searching = false;
+    if (!h) {
+        h = GetDlgItem(msg.hWndMain, IDC_BTN_CLIENT_SEARCH);
+    }
+    if (!searching) {
+        SetWindowText(h, "ÕýÔÚËÑË÷");
+        searching = true;
+        clear_list();
+        start_client_search(append_list);
+    } else {
+        SetWindowText(h, "ËÑË÷");
+        searching = false;
+        stop_client_search();
+        refresh_list();
+    }
+}
 
 void init_deal(void)
 {
@@ -51,6 +143,7 @@ void init_deal(void)
 	deal.do_fx_bit = do_fx_bit;
 	deal.do_fx_byte_read = do_fx_byte_read;
 	deal.do_fx_byte_write = do_fx_byte_write;
+    deal.do_client_search = do_client_search;
     deal.start_timer = start_timer;
     deal.last_show = 1;
     deal.init_ui = init_reg_controls;
@@ -65,6 +158,7 @@ static void init_reg_controls(void)
     _GETHWND(hRegBitType, IDC_REG_TYPE);
     _GETHWND(hRegByteType, IDC_REG_TYPE2);
     _GETHWND(hRegBitValue, IDC_REG_BIT_VALUE);
+    _GETHWND(hRegClentList, IDC_REG_CLIENT_LIST);
 #undef _GETHWND
 #pragma warning(push)
 #pragma warning(disable:4127)

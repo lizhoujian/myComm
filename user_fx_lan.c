@@ -77,13 +77,14 @@ static cJSON *create_json(u8 cmd, u8 addr_type, u16 addr, u8 *data, u16 len)
 
     root = cJSON_CreateObject();
     if (root) {
+        cJSON_AddStringToObject(root, "action", "control");
         cJSON_AddNumberToObject(root, "cmd", cmd);
         cJSON_AddNumberToObject(root, "addr_type", addr_type);
         cJSON_AddNumberToObject(root, "addr", addr);
         if (data && len > 0) {
             bytes_to_hex_string(data, &hex, len);
             if (hex) {
-                cJSON_AddStringToObject(root, "data", (const char*)hex);
+                cJSON_AddStringToObject(root, "value", (const char*)hex);
                 free(hex);
             }
         }

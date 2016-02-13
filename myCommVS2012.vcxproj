@@ -91,6 +91,7 @@
     <ClCompile Include="ghttp\http_uri.c" />
     <ClCompile Include="msg.c" />
     <ClCompile Include="pinctrl.c" />
+    <ClCompile Include="sockbroadcast.c" />
     <ClCompile Include="spdbg.c" />
     <ClCompile Include="stack.c" />
     <ClCompile Include="str2hex.c" />

@@ -90,6 +90,9 @@
     <ClCompile Include="cJSON\cJSON_Utils.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="sockbroadcast.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="about.h">

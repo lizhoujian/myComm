@@ -33,6 +33,7 @@ struct deal_s
 	void (*do_fx_bit)(void);
 	void (*do_fx_byte_read)(void);
 	void (*do_fx_byte_write)(void);
+	void (*do_client_search)(void);
     void (*start_timer)(int start);
     //....
     int last_show;

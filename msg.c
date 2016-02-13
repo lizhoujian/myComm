@@ -402,6 +402,9 @@ int on_command(HWND hWndCtrl, int id, int codeNotify)
 	case IDC_BTN_BYTE_WRITE:
 		deal.do_fx_byte_write();
 		return 0;
+    case IDC_BTN_CLIENT_SEARCH:
+        deal.do_client_search();
+        return;
     case IDC_BTN_SEND2:
         deal.do_send_fx();
         return 0;
