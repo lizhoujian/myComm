@@ -299,7 +299,7 @@ int get_comm_list(int *which)
 
     //遍历串口设备,通过SetupApi
     com_list.count = 0;
-    hDevInfo = SetupDiGetClassDevs(&GUID_DEVCLASS_PORTS, 0, 0, DIGCF_PRESENT);
+    hDevInfo = SetupDiGetClassDevs(&GUID_CLASS_COMPORT, 0, 0, DIGCF_PRESENT | DIGCF_INTERFACEDEVICE);
     if(hDevInfo == INVALID_HANDLE_VALUE)
     {
         utils.msgerr("SetupApi");

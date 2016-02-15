@@ -35,10 +35,72 @@ static void parse_braodcast_recv(struct sockaddr_in *from, const char *msg)
     append_client_list(inet_ntoa(from->sin_addr));
 }
 
+static const char **get_local_all_ip(void)
+{
+    int ret;
+    char szHost[128];   
+    struct hostent *pHost;  
+    struct in_addr addr;
+
+    int i;
+    char **pAlias;
+    int c;
+    static char **list = NULL;
+
+    if (list) return list;
+
+    ret = gethostname(szHost, 128);
+    if (ret == SOCKET_ERROR) {
+        TRACE("gethostname failed, error=%d\n", WSAGetLastError());
+        return NULL;
+    }
+
+    pHost = gethostbyname(szHost);
+    if (!pHost) {
+        TRACE("gethostbyname failed, error=%d\n", WSAGetLastError());
+        return NULL;
+    }
+
+    i = 0;
+    for (pAlias = pHost->h_aliases; *pAlias != 0; pAlias++) {
+        TRACE("\tAlternate name #%d: %s\n", ++i, *pAlias);
+    }
+
+    if (pHost->h_addrtype == AF_INET) {
+        i = 0; c = 0;
+        while (pHost->h_addr_list[i] != 0) {
+            i++;
+        }
+        c = i + 1; // append null at the end
+        list = (char**)malloc(c * sizeof(char*) + c * 20);
+        if (!(char*)list) {
+            TRACE("malloc failed.\n");
+            return NULL;
+        }
+        memset((char*)list, 0, c * sizeof(char*) + c * 20);
+        for (i = 0; i < c - 1; i++) {
+            list[i] = (char*)(list + i * 20 + c * sizeof(char*));
+        }
+
+        i = 0;
+        while (pHost->h_addr_list[i] != 0) {
+            addr.s_addr = *(u_long *) pHost->h_addr_list[i];
+            strcpy(list[i], inet_ntoa(addr));
+            TRACE("\tIP Address #%d: %s\n", i + 1, list[i]);
+            i++;
+        }
+        return list;
+    } else if (pHost->h_addrtype == AF_NETBIOS) {
+        TRACE("NETBIOS address was returned\n");
+        return NULL;
+    } else {
+        TRACE("unkown addrtype = %d\n", pHost->h_addrtype);
+        return NULL;
+    }
+}
+
 static unsigned int __stdcall client_search_thread(void* p)
 {
-    WORD wVersionRequested;
-    WSADATA wsaData;
     int ret;
     int sock;
     int so_broadcast;
@@ -46,23 +108,19 @@ static unsigned int __stdcall client_search_thread(void* p)
 
     struct sockaddr_in addr;
     struct sockaddr_in b_addr;
-    
+
     char buff[] = "Are You Espressif IOT Smart Device?";
     struct sockaddr_in from;
     char recv[128] = {0,};
     int len;
 
-    wVersionRequested = MAKEWORD(2,2);
-    ret = WSAStartup(wVersionRequested,&wsaData);
-    if (ret != NO_ERROR) {
-        TRACE(L"WSAStartup failed with error: %d\n", ret);
-        return 1;
-    }
+    if (!p) return 0;
+
+    TRACE("broadcast for %s\n", p);
 
     sock = socket(AF_INET, SOCK_DGRAM, 0);
     if (sock == INVALID_SOCKET) {
         TRACE("socket failed with error: %ld\n", WSAGetLastError());
-        WSACleanup();
         return 1;
     }
 
@@ -71,7 +129,7 @@ static unsigned int __stdcall client_search_thread(void* p)
     ret = setsockopt(sock, SOL_SOCKET, SO_BROADCAST, (char *)&so_broadcast, sizeof(so_broadcast));
 
     addr.sin_family = AF_INET; //使用互联网际协议，即IP协议
-    addr.sin_addr.S_un.S_addr = inet_addr("192.168.0.108");//htonl(INADDR_ANY); 
+    addr.sin_addr.S_un.S_addr = inet_addr((const char*)p); //inet_addr("192.168.0.108");//htonl(INADDR_ANY); 
     addr.sin_port = htons(42312);
 
     //如果仅仅是发送广播，这一步可有可无。没有绑定也能发送广播
@@ -79,7 +137,6 @@ static unsigned int __stdcall client_search_thread(void* p)
     if (ret == SOCKET_ERROR) {
         TRACE("bind failed with error %u\n", WSAGetLastError());
         closesocket(sock);
-        WSACleanup();
         return 1;
     }
 
@@ -89,8 +146,7 @@ static unsigned int __stdcall client_search_thread(void* p)
     
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, (char *)&recTimeOut, sizeof(recTimeOut));
 
-    while (thread_state == 1)
-    {
+    while (thread_state == 1) {
         memset(recv, 0, sizeof(recv));
         ret = sendto(sock, buff, strlen(buff), 0, (struct sockaddr*)&b_addr, sizeof(b_addr));
         if (ret != SOCKET_ERROR) {
@@ -109,10 +165,41 @@ static unsigned int __stdcall client_search_thread(void* p)
 
     TRACE("client search thread exit.\n");
     closesocket(sock);
+
+    return 0;
+}
+
+static unsigned int __stdcall client_search_start(void* p)
+{
+    WORD wVersionRequested;
+    WSADATA wsaData;
+    int i;
+    const char **list;
+    int ret;
+
+    wVersionRequested = MAKEWORD(2,2);
+    ret = WSAStartup(wVersionRequested,&wsaData);
+    if (ret != NO_ERROR) {
+        TRACE("WSAStartup failed with error: %d\n", ret);
+        return 1;
+    }
+
+    list = get_local_all_ip();
+    if (!list) {
+        TRACE("get locall all ip failed.\n");
+        return 0;
+    }
+
+    for (i = 0; list[i] != NULL; i++) {
+        _beginthreadex(NULL, 0, client_search_thread, (void*)list[i], 0, NULL);
+    }
+
+    while (thread_state == 1) {
+        Sleep(1000);
+    }
+
     WSACleanup();
-    
     thread_state = 3;
-    
     return 0;
 }
 
@@ -126,5 +213,5 @@ void start_client_search(void (*append_list)(const char *addr))
 {
     append_list_cb = append_list;
     thread_state = 1;
-    _beginthreadex(NULL, 0, client_search_thread, 0, 0, NULL);
+    _beginthreadex(NULL, 0, client_search_start, 0, 0, NULL);
 }

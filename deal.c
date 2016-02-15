@@ -42,6 +42,18 @@ void start_client_search(void (*append_list)(const char *addr));
 #define LIST_SIZE 20
 static char *client_list[LIST_SIZE] = {(char*)NULL,};
 
+static void TRACE(const char * sz, ...)
+{
+    char szData[512]={0};
+
+    va_list args;
+    va_start(args, sz);
+    _vsnprintf(szData, sizeof(szData) - 1, sz, args);
+    va_end(args);
+
+    OutputDebugString(szData);
+}
+
 static void clear_list(void)
 {
     int i;
@@ -92,18 +104,53 @@ static void refresh_list(void)
 {
     int i, count;
     HWND h;
+    //char buf[64];
 
     h = GetDlgItem(msg.hWndMain, IDC_REG_CLIENT_LIST);
     if (!h) return;
     
-    count = ComboBox_GetCount(h);
-    for (i = count - 1; i >= 0; i--) {
-        ComboBox_DeleteString(h, i);
-    }
+    //reset list
+    SendMessage(h, CB_RESETCONTENT, 0, 0);
+
     for (i = 0; i < LIST_SIZE; i++) {
         ComboBox_AddString(h, client_list[i]);
     }
     ComboBox_SetCurSel(h, 0);
+
+    //ComboBox_GetLBText(h, ComboBox_GetCurSel(h), buf);
+    //MessageBox(msg.hWndMain, buf, "SHOW", MB_OK|MB_ICONINFORMATION);
+}
+
+#define ROTATE_SIZE 4
+static int start_search = 0;
+static unsigned int __stdcall motion_thread(void *p)
+{
+    int i;
+    HWND h;
+    char *rotate[ROTATE_SIZE] = {"|", "/", "-", "\\"};
+    char buf[20];
+
+    h = GetDlgItem(msg.hWndMain, IDC_BTN_CLIENT_SEARCH);
+    i = 0;
+    while (start_search == 1) {
+        sprintf(buf, "正在搜索 %s", rotate[i]);
+        SetWindowText(h, buf);
+        i++;
+        if (i >= ROTATE_SIZE)
+            i = 0;
+        Sleep(200);
+    }
+}
+
+static void start_motion(void)
+{
+    start_search = 1;
+    _beginthreadex(NULL, 0, motion_thread, 0, 0, NULL);
+}
+
+static void stop_motion(void)
+{
+    start_search = 0;
 }
 
 static void do_client_search(void)
@@ -114,12 +161,13 @@ static void do_client_search(void)
         h = GetDlgItem(msg.hWndMain, IDC_BTN_CLIENT_SEARCH);
     }
     if (!searching) {
-        SetWindowText(h, "正在搜索");
         searching = true;
         clear_list();
         start_client_search(append_list);
+        start_motion();
     } else {
-        SetWindowText(h, "搜索");
+        stop_motion();
+        SetWindowText(h, "搜索客户端");
         searching = false;
         stop_client_search();
         refresh_list();
@@ -490,18 +538,6 @@ typedef struct _RECV_STRUCT
 
 } RECV_STRUCT;
 //#pragma  pack(pop)
-
-static void TRACE(const char * sz, ...)
-{
-    char szData[512]={0};
-
-    va_list args;
-    va_start(args, sz);
-    _vsnprintf(szData, sizeof(szData) - 1, sz, args);
-    va_end(args);
-
-    OutputDebugString(szData);
-}
 
 #include "user_fx.h"
 static void recv_to_fx(unsigned char *data, int len)

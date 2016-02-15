@@ -74,7 +74,6 @@
 #define IDC_CTO_BTN_CANCEL              1041
 #define IDC_REG_CLIENT_LIST             1041
 #define IDC_CTO_BTN_DEFAULT             1042
-#define IDC_BTN_BIT_EXEC2               1042
 #define IDC_BTN_CLIENT_SEARCH           1042
 #define IDC_PINCTRL_OK                  1043
 #define IDC_CBO_PINCTRL_DTR             1045
@@ -85,6 +84,7 @@
 #define IDC_STATIC_TIMER                1049
 #define IDC_EDIT_STR2HEX_SRC            1050
 #define IDC_EDIT_STR2HEX_DST            1051
+#define IDC_BUTTON1                     1052
 #define MENU_OTHER_ASCII                40001
 #define MENU_OTHER_HELP                 40002
 #define MENU_OTHER_CALC                 40003
@@ -104,7 +104,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        125
 #define _APS_NEXT_COMMAND_VALUE         40013
-#define _APS_NEXT_CONTROL_VALUE         1052
+#define _APS_NEXT_CONTROL_VALUE         1053
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

@@ -15,6 +15,18 @@
 
 struct msg_s msg;
 
+static void TRACE(const char * sz, ...)
+{
+    char szData[512]={0};
+
+    va_list args;
+    va_start(args, sz);
+    _vsnprintf(szData, sizeof(szData) - 1, sz, args);
+    va_end(args);
+
+    OutputDebugString(szData);
+}
+
 //消息结构体初始化, 构造函数
 int init_msg(void)
 {
@@ -116,6 +128,7 @@ LRESULT CALLBACK Recv2EditWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lP
 	case _msg:SetDlgMsgResult(hWnd,_msg,_result);return _msgret
 LRESULT CALLBACK MainWndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    //TRACE("hwnd = %x, umsg = %x, wparam = %x, lparam = %x\n", hWnd, uMsg, wParam, lParam);
     switch(uMsg)
     {
         _SETRESULT(WM_CLOSE, msg.on_close(), 0);
@@ -475,6 +488,22 @@ int on_command(HWND hWndCtrl, int id, int codeNotify)
         }
         break;
     }
+    case IDC_REG_CLIENT_LIST:
+    {
+        switch (codeNotify) {
+            case CBN_SELCHANGE:
+            {
+                HWND h = GetDlgItem(msg.hWndMain, IDC_EDIT_IP);
+                if (h) {
+                    char buf[100] = {0,};
+                    HWND cb = GetDlgItem(msg.hWndMain, IDC_REG_CLIENT_LIST);
+                    ComboBox_GetLBText(cb, ComboBox_GetCurSel(cb), buf);
+                    SetWindowText(h, buf);
+                }
+                break;
+            }
+        }
+    }
     }
     return 0;
 }
@@ -488,6 +517,7 @@ int on_command(HWND hWndCtrl, int id, int codeNotify)
 **************************************************/
 int on_device_change(WPARAM event, DEV_BROADCAST_HDR *pDBH)
 {
+    TRACE("device change, event = %d\n", event);
     if(msg.hComPort == INVALID_HANDLE_VALUE)
     {
         if(event == DBT_DEVICEARRIVAL)
